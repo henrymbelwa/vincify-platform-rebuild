@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 
-let transport: nodemailer.Transporter | null = null
+let transport: ReturnType<typeof nodemailer.createTransport> | null = null
 
 export function mailConfigured() {
   return Boolean(process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS'])

@@ -171,7 +171,7 @@ export const analyzeDocument = createServerFn({ method: 'POST' })
         await supabase.from('documents').update({ status: 'ready' }).eq('id', doc.id)
       }
       await supabase.from('document_processing').update({ status: 'succeeded', result }).eq('id', job!.id)
-      return { jobId: job!.id as string, result }
+      return { jobId: job!.id as string, result: result as Record<string, any> }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Processing failed'
       await supabase.from('document_processing').update({ status: 'failed', error: message }).eq('id', job!.id)

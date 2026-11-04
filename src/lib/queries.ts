@@ -93,7 +93,7 @@ export function useTable<T extends { id: string }>(table: string, invalidate: re
       onError,
     }),
     update: useMutation({
-      mutationFn: async ({ id, patch }: { id: string; patch: Partial<T> }) => must(await sb().from(table).update(patch).eq('id', id)),
+      mutationFn: async ({ id, patch }: { id: string; patch: Partial<T> }) => must(await sb().from(table).update(patch as never).eq('id', id)),
       onSuccess: done,
       onError,
     }),
