@@ -5,6 +5,7 @@ import { Copy, Gift, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Empty, PageHeader, Panel, Stat } from '@/components/app/page'
 import { must, sb } from '@/lib/supabase'
+import { useUser } from '@/lib/auth'
 
 export const Route = createFileRoute('/app/rewards')({
   head: () => ({ meta: [{ title: 'Invite Friends & Rewards - Vincify' }] }),
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/app/rewards')({
 })
 
 function Rewards() {
+  const user = useUser()
   const code = useQuery({
     queryKey: ['referral_code'],
     queryFn: async () => (must(await sb().from('referral_codes').select('code').maybeSingle()) as { code: string } | null)?.code ?? null,
@@ -36,7 +38,7 @@ function Rewards() {
   })
 
   const link = code.data && typeof window !== 'undefined' ? `${window.location.origin}/auth?mode=signup&ref=${code.data}` : ''
-  const mine = (referrals.data ?? []).filter((r) => r.referrer_id !== undefined)
+  const mine = (referrals.data ?? []).filter((r) => r.referrer_id === user.id)
   const points = (ledger.data ?? []).reduce((a, b) => a + b.points, 0)
 
   return (

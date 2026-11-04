@@ -51,7 +51,7 @@ function Notifications() {
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-brand-pink')} />
                 <div className="min-w-0 flex-1">
                   {n.link ? (
-                    <Link to={n.link} onClick={() => markRead(n.id)} className="text-sm hover:underline">
+                    <Link to={n.link as '/app'} onClick={() => markRead(n.id)} className="text-sm hover:underline">
                       {n.title}
                     </Link>
                   ) : (

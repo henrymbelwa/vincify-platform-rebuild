@@ -16,9 +16,14 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAssistantRouteImport } from './routes/app/assistant'
+import { Route as AppAutomationsRouteImport } from './routes/app/automations'
 import { Route as AppCalendarRouteImport } from './routes/app/calendar'
 import { Route as AppCheckInRouteImport } from './routes/app/check-in'
+import { Route as AppDocumentsRouteImport } from './routes/app/documents'
 import { Route as AppInboxRouteImport } from './routes/app/inbox'
+import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
+import { Route as AppReportsRouteImport } from './routes/app/reports'
+import { Route as AppRewardsRouteImport } from './routes/app/rewards'
 import { Route as AppTasksRouteImport } from './routes/app/tasks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiCronAutomationsRouteImport } from './routes/api/cron/automations'
@@ -60,6 +65,11 @@ const AppAssistantRoute = AppAssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAutomationsRoute = AppAutomationsRouteImport.update({
+  id: '/automations',
+  path: '/automations',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCalendarRoute = AppCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -70,9 +80,29 @@ const AppCheckInRoute = AppCheckInRouteImport.update({
   path: '/check-in',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDocumentsRoute = AppDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppInboxRoute = AppInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRewardsRoute = AppRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTasksRoute = AppTasksRouteImport.update({
@@ -108,9 +138,14 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -124,9 +159,14 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
@@ -142,9 +182,14 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -161,9 +206,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
+    | '/app/documents'
     | '/app/inbox'
+    | '/app/notifications'
+    | '/app/reports'
+    | '/app/rewards'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -177,9 +227,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
+    | '/app/documents'
     | '/app/inbox'
+    | '/app/notifications'
+    | '/app/reports'
+    | '/app/rewards'
     | '/app/tasks'
     | '/auth/callback'
     | '/app'
@@ -194,9 +249,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
+    | '/app/documents'
     | '/app/inbox'
+    | '/app/notifications'
+    | '/app/reports'
+    | '/app/rewards'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -265,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssistantRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/automations': {
+      id: '/app/automations'
+      path: '/automations'
+      fullPath: '/app/automations'
+      preLoaderRoute: typeof AppAutomationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/calendar': {
       id: '/app/calendar'
       path: '/calendar'
@@ -279,11 +346,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCheckInRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/documents': {
+      id: '/app/documents'
+      path: '/documents'
+      fullPath: '/app/documents'
+      preLoaderRoute: typeof AppDocumentsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/inbox': {
       id: '/app/inbox'
       path: '/inbox'
       fullPath: '/app/inbox'
       preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/rewards': {
+      id: '/app/rewards'
+      path: '/rewards'
+      fullPath: '/app/rewards'
+      preLoaderRoute: typeof AppRewardsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/tasks': {
@@ -326,9 +421,14 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
+  AppAutomationsRoute: typeof AppAutomationsRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppCheckInRoute: typeof AppCheckInRoute
+  AppDocumentsRoute: typeof AppDocumentsRoute
   AppInboxRoute: typeof AppInboxRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppRewardsRoute: typeof AppRewardsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
   AppProjectsProjectIdRoute: typeof AppProjectsProjectIdRoute
@@ -337,9 +437,14 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAssistantRoute: AppAssistantRoute,
+  AppAutomationsRoute: AppAutomationsRoute,
   AppCalendarRoute: AppCalendarRoute,
   AppCheckInRoute: AppCheckInRoute,
+  AppDocumentsRoute: AppDocumentsRoute,
   AppInboxRoute: AppInboxRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppRewardsRoute: AppRewardsRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
   AppProjectsProjectIdRoute: AppProjectsProjectIdRoute,
