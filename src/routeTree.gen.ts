@@ -15,6 +15,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppAssistantRouteImport } from './routes/app/assistant'
+import { Route as AppCheckInRouteImport } from './routes/app/check-in'
 import { Route as AppTasksRouteImport } from './routes/app/tasks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiCronAutomationsRouteImport } from './routes/api/cron/automations'
@@ -49,6 +51,16 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssistantRoute = AppAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCheckInRoute = AppCheckInRouteImport.update({
+  id: '/check-in',
+  path: '/check-in',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTasksRoute = AppTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/check-in': typeof AppCheckInRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -81,6 +95,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/check-in': typeof AppCheckInRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
@@ -93,6 +109,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/check-in': typeof AppCheckInRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -106,6 +124,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/app/assistant'
+    | '/app/check-in'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -116,6 +136,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/app/assistant'
+    | '/app/check-in'
     | '/app/tasks'
     | '/auth/callback'
     | '/app'
@@ -127,6 +149,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/app/assistant'
+    | '/app/check-in'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -186,6 +210,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/assistant': {
+      id: '/app/assistant'
+      path: '/assistant'
+      fullPath: '/app/assistant'
+      preLoaderRoute: typeof AppAssistantRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/check-in': {
+      id: '/app/check-in'
+      path: '/check-in'
+      fullPath: '/app/check-in'
+      preLoaderRoute: typeof AppCheckInRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/tasks': {
       id: '/app/tasks'
       path: '/tasks'
@@ -211,11 +249,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAssistantRoute: typeof AppAssistantRoute
+  AppCheckInRoute: typeof AppCheckInRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAssistantRoute: AppAssistantRoute,
+  AppCheckInRoute: AppCheckInRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
 }

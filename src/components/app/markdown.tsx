@@ -17,7 +17,7 @@ export function Markdown({ content }: { content: string }) {
     <div className="space-y-2.5 text-sm leading-relaxed">
       {blocks.map((block, bi) =>
         bi % 2 === 1 ? (
-          <pre key={bi} className="overflow-x-auto rounded-lg bg-[#17152a] p-3 text-xs text-white/90">
+          <pre key={bi} className="overflow-x-auto rounded-lg bg-ink p-3 text-xs text-ink-foreground/90">
             <code>{block.replace(/^\w*\n/, '')}</code>
           </pre>
         ) : (
