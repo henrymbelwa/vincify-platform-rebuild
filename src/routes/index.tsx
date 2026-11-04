@@ -23,6 +23,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [
+      { title: 'Vincify - Plan with intention. Execute with discipline.' },
+      { name: 'description', content: 'Vincify is your personal AI-powered environment for planning, managing and achieving more.' },
+      { property: 'og:title', content: 'Vincify - Your personal productivity operating system' },
+      { property: 'og:description', content: 'Tasks, daily planning, projects, documents and an AI assistant in one private workspace.' },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+  }),
   component: Home,
 })
 
@@ -201,19 +211,19 @@ function Home() {
                   size="lg"
                   className="bg-brand-gradient shadow-glow"
                 >
-                  <Link to="/app">
-                    Get started
+                  <Link to="/auth" search={{ mode: 'signup' }}>
+                    Create your account
                     <ArrowRight aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link to="/app" search={{ tour: 1 }}>
-                    Take the tour
+                  <Link to="/auth" search={{ mode: 'signin' }}>
+                    Sign in
                   </Link>
                 </Button>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
-                Explore the workspace with sample data — no sign-up needed yet.
+                Free to start. Your data stays private to your account.
               </p>
             </div>
 
@@ -353,7 +363,7 @@ function Home() {
                 Measure your progress. Improve continuously.
               </h2>
               <p className="mx-auto mt-3 max-w-reading text-white/85">
-                Open your workspace and plan your first day with Vincify.
+                Create your account and plan your first day with Vincify.
               </p>
               <Button
                 asChild
@@ -381,7 +391,7 @@ function Home() {
   )
 }
 
-/** A static, decorative glimpse of the dashboard. */
+/** Decorative illustration of the dashboard layout (not user data). */
 function HeroPreview() {
   const rows = [
     { label: 'Draft quarterly report', tag: 'High', done: true },
