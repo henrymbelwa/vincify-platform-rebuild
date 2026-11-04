@@ -13,19 +13,13 @@ import { taskStats } from '@/lib/metrics'
 import { keys, useProjects, useTable, useTasks } from '@/lib/queries'
 import type { Project } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { projectStatusLabel } from '@/lib/labels'
 
 export const Route = createFileRoute('/app/projects/')({
   head: () => ({ meta: [{ title: 'My Projects - Vincify' }] }),
   component: ProjectsPage,
 })
 
-export const projectStatusLabel: Record<Project['status'], string> = {
-  planning: 'Planning',
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-}
 
 function ProjectsPage() {
   const projects = useProjects()

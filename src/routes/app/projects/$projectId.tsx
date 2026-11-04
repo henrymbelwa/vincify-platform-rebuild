@@ -17,7 +17,7 @@ import { keys, useTable, useTaskMutations, useTasks } from '@/lib/queries'
 import { must, sb } from '@/lib/supabase'
 import type { Project } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { projectStatusLabel } from './index'
+import { projectStatusLabel } from '@/lib/labels'
 
 export const Route = createFileRoute('/app/projects/$projectId')({
   head: () => ({ meta: [{ title: 'Project - Vincify' }] }),

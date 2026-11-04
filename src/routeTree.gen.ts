@@ -22,6 +22,8 @@ import { Route as AppInboxRouteImport } from './routes/app/inbox'
 import { Route as AppTasksRouteImport } from './routes/app/tasks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiCronAutomationsRouteImport } from './routes/api/cron/automations'
+import { Route as AppProjectsIndexRouteImport } from './routes/app/projects/index'
+import { Route as AppProjectsProjectIdRouteImport } from './routes/app/projects/$projectId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +90,16 @@ const ApiCronAutomationsRoute = ApiCronAutomationsRouteImport.update({
   path: '/api/cron/automations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsProjectIdRoute = AppProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +115,8 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,6 +131,8 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/projects': typeof AppProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,6 +149,8 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,6 +168,8 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/app/'
     | '/api/cron/automations'
+    | '/app/projects/$projectId'
+    | '/app/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,6 +184,8 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/app'
     | '/api/cron/automations'
+    | '/app/projects/$projectId'
+    | '/app/projects'
   id:
     | '__root__'
     | '/'
@@ -179,6 +201,8 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/app/'
     | '/api/cron/automations'
+    | '/app/projects/$projectId'
+    | '/app/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -283,6 +307,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronAutomationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/projects/': {
+      id: '/app/projects/'
+      path: '/projects'
+      fullPath: '/app/projects/'
+      preLoaderRoute: typeof AppProjectsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/projects/$projectId': {
+      id: '/app/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/app/projects/$projectId'
+      preLoaderRoute: typeof AppProjectsProjectIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -293,6 +331,8 @@ interface AppRouteChildren {
   AppInboxRoute: typeof AppInboxRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppProjectsProjectIdRoute: typeof AppProjectsProjectIdRoute
+  AppProjectsIndexRoute: typeof AppProjectsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -302,6 +342,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppInboxRoute: AppInboxRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
+  AppProjectsProjectIdRoute: AppProjectsProjectIdRoute,
+  AppProjectsIndexRoute: AppProjectsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
