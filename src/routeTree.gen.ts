@@ -16,7 +16,9 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAssistantRouteImport } from './routes/app/assistant'
+import { Route as AppCalendarRouteImport } from './routes/app/calendar'
 import { Route as AppCheckInRouteImport } from './routes/app/check-in'
+import { Route as AppInboxRouteImport } from './routes/app/inbox'
 import { Route as AppTasksRouteImport } from './routes/app/tasks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiCronAutomationsRouteImport } from './routes/api/cron/automations'
@@ -56,9 +58,19 @@ const AppAssistantRoute = AppAssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCheckInRoute = AppCheckInRouteImport.update({
   id: '/check-in',
   path: '/check-in',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInboxRoute = AppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTasksRoute = AppTasksRouteImport.update({
@@ -84,7 +96,9 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/inbox': typeof AppInboxRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -96,7 +110,9 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/inbox': typeof AppInboxRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
@@ -110,7 +126,9 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
+  '/app/inbox': typeof AppInboxRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -125,7 +143,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/calendar'
     | '/app/check-in'
+    | '/app/inbox'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -137,7 +157,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/calendar'
     | '/app/check-in'
+    | '/app/inbox'
     | '/app/tasks'
     | '/auth/callback'
     | '/app'
@@ -150,7 +172,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reset-password'
     | '/app/assistant'
+    | '/app/calendar'
     | '/app/check-in'
+    | '/app/inbox'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -217,11 +241,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssistantRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/calendar': {
+      id: '/app/calendar'
+      path: '/calendar'
+      fullPath: '/app/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/check-in': {
       id: '/app/check-in'
       path: '/check-in'
       fullPath: '/app/check-in'
       preLoaderRoute: typeof AppCheckInRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/inbox': {
+      id: '/app/inbox'
+      path: '/inbox'
+      fullPath: '/app/inbox'
+      preLoaderRoute: typeof AppInboxRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/tasks': {
@@ -250,14 +288,18 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
+  AppCalendarRoute: typeof AppCalendarRoute
   AppCheckInRoute: typeof AppCheckInRoute
+  AppInboxRoute: typeof AppInboxRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAssistantRoute: AppAssistantRoute,
+  AppCalendarRoute: AppCalendarRoute,
   AppCheckInRoute: AppCheckInRoute,
+  AppInboxRoute: AppInboxRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
 }
