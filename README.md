@@ -1,29 +1,33 @@
-# Welcome to your Lovable project
+# Vincify
 
-This project was built with [Lovable](https://lovable.dev).
+AI-powered personal productivity workspace: tasks, daily, weekly and monthly planning, goals, projects, documents with timetable extraction, calendar, reports, email automations, referrals and an AI assistant. Installable as an app (PWA), light and dark themes.
 
-## Build with Lovable
+## Setup
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+1. Create a Supabase project.
+2. Apply the schema: open the SQL editor and run `supabase/migrations/20261104000000_init.sql` (or `supabase db push`).
+3. Auth settings in Supabase:
+   - Authentication > URL configuration: Site URL = your app URL; add `https://YOUR-DOMAIN/auth/callback` and `https://YOUR-DOMAIN/reset-password` to Redirect URLs.
+   - Authentication > Providers > Google: enable and paste your Google OAuth client ID and secret. In Google Cloud, the authorised redirect URI is `https://YOUR-PROJECT.supabase.co/auth/v1/callback`.
+   - Email confirmations should stay on so referrals only qualify for verified accounts.
+4. Copy `.env.example` to `.env` and fill in every value.
+5. `npm install` then `npm run dev`.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## Deploy on Vercel
 
-## Development
+1. Import the repository in Vercel.
+2. Add every variable from `.env.example` in Project Settings > Environment Variables (`NITRO_PRESET=vercel`).
+3. Deploy. `vercel.json` sets the build and registers the automation runner on `/api/cron/automations`. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
+   - The schedule (every 15 minutes) needs a Vercel Pro plan. On Hobby, Vercel only allows daily jobs, so instead call `GET /api/cron/automations` every 15 minutes from any external scheduler (for example cron-job.org) with the header `Authorization: Bearer YOUR_CRON_SECRET`.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## AI providers
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+`AI_PROVIDER=langflow` uses your Langflow flow (`/api/v1/run/{flow_id}`), `AI_PROVIDER=openai` uses any OpenAI-compatible API. With `AI_FALLBACK=true` the other provider is tried when the primary fails.
 
-## Built with
+## Email
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+Automations send through plain SMTP (`SMTP_*`), so any mailbox works: Gmail (app password), Outlook, Zoho, cPanel and others.
+
+## Tests
+
+`npm test`
