@@ -110,14 +110,32 @@ const features = [
     body: "Today's tasks, projects, events, goals and reminders together on one screen.",
     to: '/app' as const,
   },
+  {
+    icon: FileText,
+    title: 'Documents and timetables',
+    body: 'Upload PDFs and Word files, get AI summaries and turn a timetable into calendar entries after you review them.',
+    to: '/app/documents' as const,
+  },
+  {
+    icon: Briefcase,
+    title: 'Project workspaces',
+    body: 'Objectives, milestones, notes, custom tables and resources for every project.',
+    to: '/app/projects' as const,
+  },
+  {
+    icon: BarChart3,
+    title: 'Reports and analytics',
+    body: 'Completion rates, trends and category breakdowns calculated only from your real records.',
+    to: '/app/reports' as const,
+  },
+  {
+    icon: Rocket,
+    title: 'Automations',
+    body: 'Daily summaries, weekly reports, overdue alerts and event digests delivered to your email.',
+    to: '/app/automations' as const,
+  },
 ]
 
-const comingSoon = [
-  { icon: FileText, label: 'Document & timetable intelligence' },
-  { icon: Briefcase, label: 'Project workspaces' },
-  { icon: BarChart3, label: 'Reports & analytics' },
-  { icon: Rocket, label: 'Automations & reminders' },
-]
 
 const audiences = [
   {
@@ -309,20 +327,6 @@ function Home() {
               ))}
             </div>
 
-            <div className="mt-10 rounded-xl border border-dashed border-border p-6">
-              <h3 className="text-sm font-semibold">On the way</h3>
-              <ul className="mt-4 flex flex-wrap gap-3">
-                {comingSoon.map((c) => (
-                  <li
-                    key={c.label}
-                    className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground"
-                  >
-                    <c.icon aria-hidden="true" className="size-4" />
-                    {c.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         </section>
 
