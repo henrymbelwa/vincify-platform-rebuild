@@ -534,3 +534,27 @@ insert into storage.buckets (id, name, public, file_size_limit) values ('documen
 create policy "doc owner read" on storage.objects for select to authenticated using (bucket_id = 'documents' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "doc owner write" on storage.objects for insert to authenticated with check (bucket_id = 'documents' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "doc owner delete" on storage.objects for delete to authenticated using (bucket_id = 'documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Referral claim for accounts created through Google (no signup metadata). Only within 24h of account creation.
+create or replace function public.claim_referral(_code text) returns boolean language plpgsql security definer set search_path = public as $$
+declare referrer uuid; created timestamptz;
+begin
+  if auth.uid() is null then return false; end if;
+  select created_at into created from auth.users where id = auth.uid();
+  if created < now() - interval '24 hours' then return false; end if;
+  if exists (select 1 from public.referrals where referred_id = auth.uid()) then return false; end if;
+  select user_id into referrer from public.referral_codes where code = upper(_code);
+  if referrer is null or referrer = auth.uid() then return false; end if;
+  insert into public.referrals (referrer_id, referred_id) values (referrer, auth.uid());
+  return true;
+end $$;
+revoke execute on function public.claim_referral(text) from public, anon;
+grant execute on function public.claim_referral(text) to authenticated;
+
+-- Profile completion also qualifies a pending referral.
+create or replace function public.on_profile_onboarded() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.onboarded and not coalesce(old.onboarded, false) then perform public.qualify_referral(new.id); end if;
+  return new;
+end $$;
+create trigger referral_onboard after update of onboarded on public.profiles for each row execute function public.on_profile_onboarded();
