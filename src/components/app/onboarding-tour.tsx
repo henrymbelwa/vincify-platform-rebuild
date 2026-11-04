@@ -26,7 +26,7 @@ const steps: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: Bot,
     title: 'Vincify AI knows your context',
-    body: 'Ask the assistant to plan your day, break down projects or review your week — it understands your tasks, goals and timetable.',
+    body: 'Ask the assistant to plan your day, break down projects or review your week - it understands your tasks, goals and timetable.',
   },
   {
     icon: SunMedium,
@@ -41,7 +41,7 @@ const steps: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: FolderKanban,
     title: 'Projects with real structure',
-    body: 'Objectives, milestones, notes, custom tables and resources — a dedicated workspace for every ambition.',
+    body: 'Objectives, milestones, notes, custom tables and resources - a dedicated workspace for every ambition.',
   },
   {
     icon: ChartNoAxesCombined,
@@ -71,7 +71,7 @@ export function OnboardingTour({
       }}
     >
       <DialogContent className="overflow-hidden p-0 sm:max-w-md">
-        <div className="relative h-36 bg-[#17152a]">
+        <div className="relative h-36 bg-ink">
           <div
             aria-hidden="true"
             className="absolute inset-0"
@@ -101,7 +101,7 @@ export function OnboardingTour({
                   key={s.title}
                   className={cn(
                     'h-1.5 rounded-full transition-all motion-reduce:transition-none',
-                    i === step ? 'w-5 bg-brand-gradient' : 'w-1.5 bg-slate-200',
+                    i === step ? 'w-5 bg-brand-gradient' : 'w-1.5 bg-muted',
                   )}
                 />
               ))}

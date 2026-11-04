@@ -71,7 +71,7 @@ const pillars = [
   {
     icon: CheckCircle2,
     title: 'Execute with discipline',
-    body: 'Work from one list of tasks, projects and events — with list, board and timeline views.',
+    body: 'Work from one list of tasks, projects and events - with list, board and timeline views.',
   },
   {
     icon: BarChart3,
@@ -455,7 +455,7 @@ function HeroPreview() {
       <div className="mt-5 flex items-start gap-3 rounded-lg bg-muted p-3">
         <Bot className="mt-0.5 size-4 shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
-          You finish most deep work before noon — try scheduling the report
+          You finish most deep work before noon - try scheduling the report
           review for tomorrow morning.
         </p>
       </div>
