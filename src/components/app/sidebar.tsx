@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { navGroups, type NavItem } from '@/lib/navigation'
-import { initials, useWorkspace } from '@/lib/workspace'
+import { initials, signOut, useUser } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 const itemBase =
-  'group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none'
+  'group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none'
 const itemActive =
   'bg-accent text-accent-foreground before:absolute before:inset-y-2 before:-left-3 before:w-[3px] before:rounded-r-full before:bg-brand-gradient'
 
@@ -35,28 +35,17 @@ function NavLink({
       <span className={cn('truncate', collapsed && 'sr-only')}>{item.label}</span>
     </>
   )
-  const link =
-    'path' in item ? (
-      <Link
-        to={item.path}
-        activeOptions={{ exact: item.path === '/app' }}
-        className={cn(itemBase, collapsed && 'justify-center px-0')}
-        activeProps={{ className: itemActive }}
-        onClick={onNavigate}
-      >
-        {inner}
-      </Link>
-    ) : (
-      <Link
-        to="/app/$section"
-        params={{ section: item.section }}
-        className={cn(itemBase, collapsed && 'justify-center px-0')}
-        activeProps={{ className: itemActive }}
-        onClick={onNavigate}
-      >
-        {inner}
-      </Link>
-    )
+  const link = (
+    <Link
+      to={item.path}
+      activeOptions={{ exact: item.path === '/app' }}
+      className={cn(itemBase, collapsed && 'justify-center px-0')}
+      activeProps={{ className: itemActive }}
+      onClick={onNavigate}
+    >
+      {inner}
+    </Link>
+  )
   if (!collapsed) return link
   return (
     <Tooltip>
@@ -75,7 +64,7 @@ export function SidebarContent({
   onToggle?: () => void
   onNavigate?: () => void
 }) {
-  const { user } = useWorkspace()
+  const user = useUser()
   const navigate = useNavigate()
 
   return (
@@ -101,7 +90,7 @@ export function SidebarContent({
           <div key={group.label}>
             <p
               className={cn(
-                'mb-1.5 px-2.5 text-[10.5px] font-semibold tracking-[0.12em] text-slate-400 uppercase',
+                'mb-1.5 px-2.5 text-[10.5px] font-semibold tracking-[0.12em] text-muted-foreground/70 uppercase',
                 collapsed && 'sr-only',
               )}
             >
@@ -129,18 +118,17 @@ export function SidebarContent({
       </nav>
 
       {!collapsed && (
-        <div className="mx-3 mb-3 overflow-hidden rounded-xl bg-[#17152a] p-4 text-white">
+        <div className="mx-3 mb-3 overflow-hidden rounded-xl bg-ink p-4 text-ink-foreground">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <LogoMark size={18} /> Invite & earn
           </div>
-          <p className="mt-1.5 text-xs leading-relaxed text-white/65">
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-foreground/65">
             Share Vincify with friends and earn points for every verified sign-up.
           </p>
           <Link
-            to="/app/$section"
-            params={{ section: 'rewards' }}
+            to="/app/rewards"
             onClick={onNavigate}
-            className="mt-3 inline-flex h-7 items-center rounded-md bg-white px-2.5 text-xs font-medium text-[#17152a] hover:bg-white/90"
+            className="mt-3 inline-flex h-7 items-center rounded-md bg-card px-2.5 text-xs font-medium text-foreground hover:bg-card/90"
           >
             Invite friends
           </Link>
@@ -178,14 +166,14 @@ export function SidebarContent({
               <span className="block text-xs text-muted-foreground">{user.email}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigate({ to: '/app/$section', params: { section: 'profile' } })}>
+            <DropdownMenuItem onSelect={() => navigate({ to: '/app/profile' })}>
               <UserRound /> Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate({ to: '/app/$section', params: { section: 'settings' } })}>
+            <DropdownMenuItem onSelect={() => navigate({ to: '/app/settings' })}>
               <Settings /> Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => navigate({ to: '/login' })}>
+            <DropdownMenuItem variant="destructive" onSelect={() => signOut((to) => navigate({ to, replace: true }))}>
               <LogOut /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
