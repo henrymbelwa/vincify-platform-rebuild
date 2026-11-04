@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
-const markSrc = (w: number) =>
-  `/.netlify/images?url=/img/vincify-mark.png&w=${w}&fm=webp`
+const markSrc = (_w: number) =>
+  `/img/vincify-mark.png`
 
 export function LogoMark({
   size = 32,
