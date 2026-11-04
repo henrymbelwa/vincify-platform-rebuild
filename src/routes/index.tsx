@@ -279,7 +279,7 @@ function Home() {
               Everything you need, in one workspace
             </h2>
             <p className="mt-3 max-w-reading text-muted-foreground">
-              Jump straight into any of these — they're ready to try today.
+              Every module is available the moment you sign in.
             </p>
             <div className="mt-10 grid gap-6 sm:grid-cols-2">
               {features.map((f) => (
