@@ -1,56 +1,46 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { projects } from '@/lib/fixtures'
-import { useWorkspace } from '@/lib/workspace'
+import { useProjects, useTaskMutations } from '@/lib/queries'
+import type { Priority } from '@/lib/types'
 
 const schema = z.object({
-  title: z.string().trim().min(2, 'Give your task a short title.'),
-  description: z.string().optional(),
+  title: z.string().trim().min(2, 'Give your task a short title.').max(200),
+  description: z.string().trim().max(8000),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  category: z.string().trim().min(1, 'Choose or type a category.'),
-  project: z.string(),
-  dueInDays: z.string(),
+  category: z.string().trim().max(60),
+  project_id: z.string(),
+  due: z.string(),
 })
-type Values = z.infer<typeof schema>
 
-export function NewTaskDialog({ children }: { children: (open: () => void) => React.ReactNode }) {
+export const selectClass = 'h-9 w-full rounded-md border bg-background px-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+
+export function NewTaskDialog({ children, projectId }: { children: (open: () => void) => ReactNode; projectId?: string }) {
   const [open, setOpen] = useState(false)
-  const { addTask } = useWorkspace()
-  const form = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { title: '', description: '', priority: 'medium', category: 'Work', project: 'none', dueInDays: '1' },
-  })
+  const { create } = useTaskMutations()
+  const projects = useProjects()
 
-  const submit = form.handleSubmit((v) => {
-    addTask({
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const parsed = schema.safeParse(Object.fromEntries(new FormData(e.currentTarget)))
+    if (!parsed.success) return toast.error(parsed.error.issues[0]!.message)
+    const v = parsed.data
+    await create.mutateAsync({
       title: v.title,
-      description: v.description || undefined,
-      priority: v.priority,
-      category: v.category,
-      project: v.project === 'none' ? undefined : v.project,
-      dueInDays: Number(v.dueInDays),
-      status: 'not_started',
+      description: v.description || null,
+      priority: v.priority as Priority,
+      category: v.category || null,
+      project_id: v.project_id || null,
+      due_at: v.due ? new Date(v.due).toISOString() : null,
     })
-    toast.success('Task created', { description: v.title })
-    form.reset()
+    toast.success('Task created')
     setOpen(false)
-  })
+  }
 
   return (
     <>
@@ -59,81 +49,56 @@ export function NewTaskDialog({ children }: { children: (open: () => void) => Re
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New task</DialogTitle>
-            <DialogDescription>Capture what needs doing, how important it is and when it's due.</DialogDescription>
+            <DialogDescription>Capture it now, organise it later.</DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={submit} noValidate className="space-y-4">
-              <FormField control={form.control} name="title" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl><Input placeholder="e.g. Draft project proposal" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl><Textarea rows={2} placeholder="Optional details" {...field} /></FormControl>
-                </FormItem>
-              )} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField control={form.control} name="priority" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl><SelectTrigger className="w-full"><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="dueInDays" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl><SelectTrigger className="w-full"><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="0">Today</SelectItem>
-                        <SelectItem value="1">Tomorrow</SelectItem>
-                        <SelectItem value="3">In 3 days</SelectItem>
-                        <SelectItem value="7">Next week</SelectItem>
-                        <SelectItem value="30">Next month</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="category" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="project" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl><SelectTrigger className="w-full"><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No project</SelectItem>
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )} />
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="t-title">Title</Label>
+              <Input id="t-title" name="title" autoFocus required maxLength={200} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="t-desc">Details</Label>
+              <Textarea id="t-desc" name="description" rows={3} maxLength={8000} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="t-pri">Priority</Label>
+                <select id="t-pri" name="priority" defaultValue="medium" className={selectClass}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit" className="bg-brand-gradient hover:opacity-95">Create task</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-due">Due</Label>
+                <Input id="t-due" name="due" type="datetime-local" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-cat">Category</Label>
+                <Input id="t-cat" name="category" placeholder="Work, Study, Personal" maxLength={60} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-proj">Project</Label>
+                <select id="t-proj" name="project_id" defaultValue={projectId ?? ''} className={selectClass}>
+                  <option value="">No project</option>
+                  {projects.data?.filter((p) => p.status !== 'archived').map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="brand" disabled={create.isPending}>
+                Create task
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>
