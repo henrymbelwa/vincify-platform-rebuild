@@ -18,7 +18,7 @@ AI-powered personal productivity workspace: tasks, daily, weekly and monthly pla
 1. Import the repository in Vercel.
 2. Add every variable from `.env.example` in Project Settings > Environment Variables (`NITRO_PRESET=vercel`).
 3. Deploy. `vercel.json` sets the build and registers the automation runner on `/api/cron/automations`. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
-   - The Hobby plan only allows daily cron jobs. On Hobby, change the schedule to `0 * * * *` on Pro, or call the endpoint hourly from any external scheduler with the same bearer header.
+   - The schedule (every 15 minutes) needs a Vercel Pro plan. On Hobby, Vercel only allows daily jobs, so instead call `GET /api/cron/automations` every 15 minutes from any external scheduler (for example cron-job.org) with the header `Authorization: Bearer YOUR_CRON_SECRET`.
 
 ## AI providers
 
