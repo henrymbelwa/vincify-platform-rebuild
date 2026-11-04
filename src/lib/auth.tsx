@@ -92,7 +92,7 @@ export function initials(name: string) {
   )
 }
 
-export async function signOut(navigate: (to: string) => void) {
+export async function signOut(done: () => void) {
   await sb().auth.signOut()
-  navigate('/auth')
+  done()
 }

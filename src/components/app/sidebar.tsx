@@ -173,7 +173,7 @@ export function SidebarContent({
               <Settings /> Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => signOut((to) => navigate({ to, replace: true }))}>
+            <DropdownMenuItem variant="destructive" onSelect={() => signOut(() => navigate({ to: '/auth', replace: true }))}>
               <LogOut /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
