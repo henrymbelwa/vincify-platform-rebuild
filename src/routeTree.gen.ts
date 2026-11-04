@@ -22,8 +22,10 @@ import { Route as AppCheckInRouteImport } from './routes/app/check-in'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
 import { Route as AppInboxRouteImport } from './routes/app/inbox'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
+import { Route as AppProfileRouteImport } from './routes/app/profile'
 import { Route as AppReportsRouteImport } from './routes/app/reports'
 import { Route as AppRewardsRouteImport } from './routes/app/rewards'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppTasksRouteImport } from './routes/app/tasks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiCronAutomationsRouteImport } from './routes/api/cron/automations'
@@ -95,6 +97,11 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsRoute = AppReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -103,6 +110,11 @@ const AppReportsRoute = AppReportsRouteImport.update({
 const AppRewardsRoute = AppRewardsRouteImport.update({
   id: '/rewards',
   path: '/rewards',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTasksRoute = AppTasksRouteImport.update({
@@ -144,8 +156,10 @@ export interface FileRoutesByFullPath {
   '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
   '/app/rewards': typeof AppRewardsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -165,8 +179,10 @@ export interface FileRoutesByTo {
   '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
   '/app/rewards': typeof AppRewardsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
@@ -188,8 +204,10 @@ export interface FileRoutesById {
   '/app/documents': typeof AppDocumentsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/reports': typeof AppReportsRoute
   '/app/rewards': typeof AppRewardsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -212,8 +230,10 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/inbox'
     | '/app/notifications'
+    | '/app/profile'
     | '/app/reports'
     | '/app/rewards'
+    | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -233,8 +253,10 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/inbox'
     | '/app/notifications'
+    | '/app/profile'
     | '/app/reports'
     | '/app/rewards'
+    | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
     | '/app'
@@ -255,8 +277,10 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/app/inbox'
     | '/app/notifications'
+    | '/app/profile'
     | '/app/reports'
     | '/app/rewards'
+    | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
     | '/app/'
@@ -367,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/reports': {
       id: '/app/reports'
       path: '/reports'
@@ -379,6 +410,13 @@ declare module '@tanstack/react-router' {
       path: '/rewards'
       fullPath: '/app/rewards'
       preLoaderRoute: typeof AppRewardsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/tasks': {
@@ -427,8 +465,10 @@ interface AppRouteChildren {
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppInboxRoute: typeof AppInboxRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRewardsRoute: typeof AppRewardsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
   AppProjectsProjectIdRoute: typeof AppProjectsProjectIdRoute
@@ -443,8 +483,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppDocumentsRoute: AppDocumentsRoute,
   AppInboxRoute: AppInboxRoute,
   AppNotificationsRoute: AppNotificationsRoute,
+  AppProfileRoute: AppProfileRoute,
   AppReportsRoute: AppReportsRoute,
   AppRewardsRoute: AppRewardsRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
   AppProjectsProjectIdRoute: AppProjectsProjectIdRoute,
