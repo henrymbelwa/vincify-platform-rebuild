@@ -1,58 +1,109 @@
-# Vincify read-only audit report
+# Stage A: backend configuration audit (read only)
 
-Nothing was changed. Checks covered the code and read-only queries on the connected Supabase project (ref rchpocunkrehnzwqmett).
+Nothing was changed, and no secret values were read or printed.
 
-## 1. Supabase client
-- Done. `src/lib/supabase.ts` builds the browser client from `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, both set in `.env` for the connected project. It uses PKCE, saves the session and refreshes it automatically.
-- Server functions get the user's bearer token through `attachBearer` in `src/start.ts` and re-check it in `requireUser`.
-- Note: a second, unused set of generated files (`src/integrations/supabase/*`) also exists. No app screen imports it. It is harmless but duplicated.
+## 1. AI provider
 
-## 2. Authentication
-- Done: email/password registration (`signUp`), sign-in, Google sign-in (`signInWithOAuth` plus `/auth/callback`), password reset (`/reset-password`), sign-out from the sidebar and from settings, saved sessions with an `onAuthStateChange` listener (`src/lib/auth.tsx`), and onboarding.
-- Not checked: whether Google is turned on in Supabase and whether the redirect URLs are set. That is dashboard configuration and can't be seen from the code.
+**Where AI runs** (`src/lib/api.functions.ts`, using `src/lib/server/ai.server.ts`)
+- `sendChat`: assistant chat. It saves to conversations and messages and uses ai_memories as context.
+- `analyzeDocument`: document summaries and timetable extraction. Text comes out of PDFs through `unpdf` and out of DOCX files through `mammoth`. Results go to document_processing, timetables and timetable_entries.
+- Both call `complete()`, which tries `AI_PROVIDER` first. When `AI_FALLBACK` is not `false`, it then tries the other provider, skipping any provider that isn't configured.
 
-## 3. Dashboard and data
-- Every screen reads and writes real records through Supabase, and Row Level Security limits each user to their own rows. No mock, fixture or demo data was found. Empty states show when there are no records.
+**Which provider the code expects**: Langflow by default. Set `AI_PROVIDER=openai` to use any OpenAI-compatible API instead (`POST {OPENAI_BASE_URL}/chat/completions`).
 
-## 4. Feature-to-table wiring
-
-| Feature | Tables | Status |
+| Variable | Purpose | Required |
 |---|---|---|
-| Tasks | tasks | Connected (create, update, delete, list) |
-| Goals | goals | Connected (check-in Goals tab, dashboard) |
-| Habits | habits, habit_logs | MISSING: no screen and no code use them |
-| Projects | projects, project_milestones, project_notes, project_objectives, project_resources, custom_tables/columns/rows | Connected |
-| Documents | documents, document_processing | Connected (upload, AI analysis, download, delete) |
-| Timetables | timetables, timetable_entries | Connected (built from documents, shown on calendar) |
-| Calendar events | calendar_events | Connected, with reminders sent by the scheduled job |
-| Check-ins | daily_checkins, weekly_plans, monthly_plans | Connected |
-| Reports | reports | PARTIAL: the page calculates charts live from tasks and check-ins. Nothing is saved to the reports table, and there's no AI-written summary |
-| AI conversations | conversations, messages, ai_memories | Connected through the `sendChat` server function |
-| Notifications | notifications, notification_preferences | Connected (inbox, preferences, created by the scheduled job) |
-| Automations | automation_rules, automation_runs | Connected |
-| Rewards/referrals | referral_codes, referrals, reward_transactions | Connected (claimed during onboarding) |
+| AI_PROVIDER | `langflow` or `openai` | Yes (defaults to langflow) |
+| AI_FALLBACK | `true`/`false`: try the other provider when the first fails | Optional |
+| LANGFLOW_URL | Address of the Langflow server | If using Langflow |
+| LANGFLOW_FLOW_ID | Which Langflow flow to run | If using Langflow |
+| LANGFLOW_API_KEY | Sent as the `x-api-key` header | If your Langflow needs it |
+| OPENAI_BASE_URL | Address of the OpenAI-compatible API | Optional (defaults to OpenAI) |
+| OPENAI_API_KEY | API key, sent as a Bearer token | If using openai |
+| OPENAI_MODEL | Model name | Optional (defaults to gpt-4o-mini) |
 
-Tables with no code using them: `habits`, `habit_logs`, `reports`, `planned_activities` (time blocks in the daily plan), `productivity_metrics` (saved daily scores), `reminders` (standalone reminders), `connected_integrations`.
+**Hugging Face Inference Providers**: yes, with no code rewrite. Their router speaks the OpenAI-compatible format:
+- `AI_PROVIDER=openai`
+- `OPENAI_BASE_URL=https://router.huggingface.co/v1`
+- `OPENAI_API_KEY=<HF token with Inference Providers permission>`
+- `OPENAI_MODEL=<model id, for example meta-llama/Llama-3.3-70B-Instruct>`
 
-## 5. Document storage
-- Done. Uploads go to the private `documents` bucket at `<user_id>/<uuid>-<filename>`. Files are limited to PDF, DOCX and TXT up to 20 MB. If saving the record fails, the uploaded file is removed again. Downloads use 60-second signed links.
-- The bucket has four storage rules (read, insert, update, delete), all named `vincify_document_*`. I didn't print what each rule contains. Confirming they match the user-folder rule is the first step of any follow-up.
+Caveat: document analysis asks for `response_format: json_object`. Some Hugging Face models don't support it and return an error (400). The reply is already read leniently, so the fix is small: drop that setting when a new flag is off. That flag doesn't exist yet and would need a small code change.
 
-## 6. Missing or incomplete backend features
-1. Habits: there's no screen and no tracking logic.
-2. Saved reports: there's no storage, history or AI summary for weekly or monthly reports.
-3. Daily time-blocking (planned_activities): not wired.
-4. Saved productivity metrics: scores are only calculated live.
-5. Standalone reminders: the table exists, but nothing schedules or sends them. Event reminders work.
-6. Connected integrations (email or WhatsApp verification): not wired. WhatsApp was deferred.
-7. The Google sign-in, SMTP and AI provider (Langflow or OpenAI-compatible) settings aren't in `.env` yet. AI chat, document analysis and email will fail at runtime until they're added.
-8. The scheduled job (`/api/cron/automations`) needs a scheduler such as Vercel Cron that sends `CRON_SECRET`. `vercel.json` should be checked.
+**Gaps found**
+1. AI calls have no time limit or retry. A slow provider can hang until Vercel cuts the request off (60 s on Hobby, 300 s on Pro).
+2. The provider's error message is hidden. Only the status code is shown, which makes it hard to tell a bad key from a wrong model.
+3. There's no flag to turn off `json_object` mode, the Hugging Face caveat above.
+4. Langflow replies are read from one fixed position in the response. Flows built differently will return an empty answer.
 
-## 7. Secret exposure
-- None found. The service-role key is read only in server files (`src/lib/server/admin.server.ts` and `client.server.ts`) and is never included in browser code. The only `sb_secret_` mention is a prefix check. `.env` contains only the URL, the publishable key and the project ID.
+## 2. Email delivery
 
-## 8. 36 vs 37 tables
-- The database has 37 public tables, all with Row Level Security on and no views. That is the same count as the schema list. The earlier figure of 36 most likely left out one table, probably `document_processing` or one of the child tables, or was counted before the last migration. The query result itself is exact: 37 tables, none without security rules.
+| Email | Sent by |
+|---|---|
+| Registration confirmation, password reset, Google sign-in links | Supabase Auth itself, not the app code |
+| Daily, weekly and report digests from Automations, plus "Send now" | The app, over SMTP through nodemailer (`src/lib/server/mail.server.ts`) |
+| Event reminders | In-app notifications only, no email |
 
-## Proposed next step (after your approval)
-Choose which missing items to build: habits, saved reports, time-blocking, metrics snapshots, standalone reminders. Then check the storage rule contents and the cron setup. No changes will happen until you approve.
+The app uses SMTP, not an email API.
+
+| Variable | Purpose |
+|---|---|
+| SMTP_HOST | SMTP server address |
+| SMTP_PORT | 465 (default) or 587 |
+| SMTP_SECURE | `true` for 465, `false` for 587 (STARTTLS) |
+| SMTP_USER | Mailbox login |
+| SMTP_PASS | Mailbox or app password |
+| EMAIL_FROM | Sender, for example `Vincify <no-reply@yourdomain>`. Defaults to SMTP_USER |
+
+**PlainSMTP or any other SMTP provider** works without code changes. Only the six variables above change.
+
+**Recommendation**: for sign-up and password-reset emails, enter the same SMTP details in the Supabase dashboard under Authentication > Emails > SMTP Settings. Supabase's built-in sender is heavily rate-limited, so it isn't suitable for production.
+
+## 3. Vercel scheduled jobs
+
+- The handler at `src/routes/api/cron/automations.ts` only accepts GET requests that carry `Authorization: Bearer <CRON_SECRET>`. Anything else is refused (401). It uses the service-role key, runs due automations in each user's own time zone, and creates event reminders.
+- `vercel.json` sets the build command to `NITRO_PRESET=vercel npm run build` and schedules a cron for `/api/cron/automations` every 15 minutes.
+- When `CRON_SECRET` is set as an environment variable in Vercel, Vercel's cron automatically sends exactly that header. The job works as written.
+
+**Compatibility issues**
+1. **Plan limit**: Vercel Hobby runs cron jobs at most once a day. On Hobby, a 15-minute schedule fails at deploy time or runs only daily. That would break hourly digests and event reminders.
+   - Option A: Vercel Pro.
+   - Option B: change the schedule to daily on Hobby.
+   - Option C: use an outside scheduler, such as cron-job.org or Supabase pg_cron with pg_net, to call the URL every 15 minutes with the Bearer header.
+2. **Scale**: the job handles users one at a time in a single run. That's fine at small scale, but with many users it could exceed the time limit.
+
+**Setup**: generate a long random `CRON_SECRET`, add it in Vercel Project Settings > Environment Variables for Production, then redeploy. You can check the job under Project > Cron Jobs.
+
+## 4. Deployment readiness
+
+**Full variable list for Vercel**
+
+| Variable | Scope | Purpose |
+|---|---|---|
+| VITE_SUPABASE_URL | Public, needed at build | Browser Supabase address |
+| VITE_SUPABASE_PUBLISHABLE_KEY | Public, needed at build | Browser key (publishable) |
+| VITE_APP_URL | Public | Site URL |
+| SUPABASE_URL | Server | Server Supabase address |
+| SUPABASE_PUBLISHABLE_KEY | Server | Checks users in server functions |
+| SUPABASE_SERVICE_ROLE_KEY | Server, secret | Cron job and account deletion only |
+| APP_URL | Server | Links in emails, for example `https://vincify.vercel.app` |
+| AI_* / LANGFLOW_* / OPENAI_* | Server | See section 1 |
+| SMTP_* / EMAIL_FROM | Server | See section 2 |
+| CRON_SECRET | Server, secret | See section 3 |
+| NITRO_PRESET | Build | `vercel` (also set inside `vercel.json`) |
+
+**Currently missing from this workspace's settings**: all of the AI, SMTP, `CRON_SECRET`, `APP_URL` and `VITE_APP_URL` values. Only the Supabase values are set.
+
+**Could fail after deployment**
+1. `sendChat` and `analyzeDocument`: they fail with "No AI provider is configured" until the AI variables are set. Large PDFs can also hit the time limit.
+2. "Send now" and the cron digests: they fail until SMTP is configured.
+3. Cron: the plan limit described in section 3.
+4. Google sign-in: Supabase needs `https://<vercel-domain>/auth/callback` added under Auth > URL Configuration. The Site URL must be the Vercel domain, and Google OAuth must be enabled.
+5. Build: `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, which includes Nitro. It is set to honour `NITRO_PRESET=vercel`, but no Vercel build has been run to confirm this. Also, `nitro` is pinned to a beta version.
+6. `VITE_*` values are baked in at build time. Set them before the first build.
+
+## Proposed changes (only after your approval)
+1. Add a time limit and clearer errors to AI calls, plus a flag to turn off JSON mode for Hugging Face.
+2. Make reading Langflow replies more forgiving of different response shapes.
+3. Choose a cron strategy (Pro, daily on Hobby, or outside scheduler), and update `vercel.json` and `.env.example` to match.
+4. Write a short Vercel and Supabase setup checklist in the README covering redirect URLs, SMTP in Supabase Auth and the variable list.
