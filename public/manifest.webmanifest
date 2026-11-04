@@ -1,0 +1,16 @@
+{
+  "name": "Vincify",
+  "short_name": "Vincify",
+  "description": "Your personal AI-powered environment for planning, managing and achieving more.",
+  "id": "/",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f0c1d",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
