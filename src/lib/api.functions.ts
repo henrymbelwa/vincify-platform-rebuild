@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireUser } from '@/lib/auth-middleware'
+import { DOCX_MIME, MAX_INLINE_BYTES, dailyLimit, isImage, nextQuotaReset, pdfStrategy, quotaDay, resolveMime } from '@/lib/documents'
+import type { InlineFile } from '@/lib/server/ai.server'
 
 const MAX_HISTORY = 10
 const MAX_MEMORIES = 15
@@ -68,7 +70,7 @@ export const sendChat = createServerFn({ method: 'POST' })
       .join('\n')
 
     const turns = (history.data ?? []).reverse().map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content as string }))
-    const raw = await complete([{ role: 'system', content: `${SYSTEM}\n\n${ctx}` }, ...turns], { sessionId: conversationId })
+    const raw = await complete([{ role: 'system', content: `${SYSTEM}\n\n${ctx}` }, ...turns])
 
     const found = [...raw.matchAll(/<memory(?:\s+category="(\w+)")?>([\s\S]*?)<\/memory>/g)]
     const reply = raw.replace(/<memory[\s\S]*?<\/memory>/g, '').trim()
@@ -93,14 +95,14 @@ export const sendChat = createServerFn({ method: 'POST' })
     return { conversationId, message: msg, memoriesSaved: memoryOn ? found.length : 0 }
   })
 
-async function extractText(bytes: Uint8Array, mime: string, name: string): Promise<string> {
-  if (mime === 'application/pdf' || name.toLowerCase().endsWith('.pdf')) {
+async function extractText(bytes: Uint8Array, mime: string): Promise<string> {
+  if (mime === 'application/pdf') {
     const { extractText: pdf, getDocumentProxy } = await import('unpdf')
     const doc = await getDocumentProxy(bytes)
     const { text } = await pdf(doc, { mergePages: true })
     return text
   }
-  if (name.toLowerCase().endsWith('.docx')) {
+  if (mime === DOCX_MIME) {
     const mammoth = await import('mammoth')
     const { value } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) })
     return value
@@ -108,72 +110,146 @@ async function extractText(bytes: Uint8Array, mime: string, name: string): Promi
   return new TextDecoder().decode(bytes)
 }
 
-/** Extracts a document and runs AI analysis. Timetable results wait for user review before anything is saved. */
+const TIMETABLE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    name: { type: 'STRING' },
+    entries: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          title: { type: 'STRING' },
+          weekday: { type: 'INTEGER', description: '0=Sunday ... 6=Saturday' },
+          start_time: { type: 'STRING', description: 'HH:MM, 24-hour' },
+          end_time: { type: 'STRING', description: 'HH:MM, 24-hour' },
+          location: { type: 'STRING', nullable: true },
+        },
+        required: ['title', 'weekday', 'start_time', 'end_time'],
+      },
+    },
+  },
+  required: ['name', 'entries'],
+}
+
+const TimetableResult = z.object({
+  name: z.string().max(160).catch('Timetable'),
+  entries: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1).max(200),
+        weekday: z.coerce.number().int().min(0).max(6),
+        start_time: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/),
+        end_time: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/),
+        location: z.string().max(200).nullable().optional(),
+      }),
+    )
+    .max(200),
+})
+
+/** Remaining daily document analyses for the signed-in user. */
+export const getAnalysisQuota = createServerFn({ method: 'POST' })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    const limit = dailyLimit(process.env['DOCUMENT_ANALYSIS_DAILY_LIMIT'])
+    const { data } = await context.supabase
+      .from('document_analysis_usage')
+      .select('used')
+      .eq('user_id', context.user.id)
+      .eq('day', quotaDay())
+      .maybeSingle()
+    const used = Math.min(limit, (data?.used as number | undefined) ?? 0)
+    return { limit, used, remaining: limit - used, resetsAt: nextQuotaReset() }
+  })
+
+/**
+ * Analyses a stored document. The browser sends only the document id; the file is read from private storage
+ * after ownership checks, one daily allowance is reserved atomically, then the file goes to Gemini.
+ * Timetable results wait for user review before anything is saved.
+ */
 export const analyzeDocument = createServerFn({ method: 'POST' })
   .middleware([requireUser])
   .inputValidator((d: unknown) => z.object({ documentId: z.string().uuid(), kind: z.enum(['summary', 'timetable']) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, user } = context
-    const { complete, parseJsonReply } = await import('@/lib/server/ai.server')
-    const { data: doc, error } = await supabase.from('documents').select('*').eq('id', data.documentId).single()
-    if (error || !doc) throw new Error('Document not found')
+    const { generate, parseJsonReply, AiError } = await import('@/lib/server/ai.server')
+    const { data: doc } = await supabase.from('documents').select('*').eq('id', data.documentId).eq('user_id', user.id).maybeSingle()
+    if (!doc || doc.user_id !== user.id) throw new Error('Document not found')
+    const path = doc.storage_path as string
+    if (!path.startsWith(`${user.id}/`) || path.includes('..')) throw new Error('Document not found')
+    const mime = resolveMime(doc.mime_type as string, doc.name as string)
+    if (!mime) throw new Error('This file type is not supported for analysis.')
+
+    // Prepare the input before reserving allowance, so download or format errors never consume it.
+    const file = await supabase.storage.from('documents').download(path)
+    if (file.error || !file.data) throw new Error('The document could not be read from storage.')
+    const bytes = new Uint8Array(await file.data.arrayBuffer())
+    const files: InlineFile[] = []
+    let text = ''
+    if (mime === 'application/pdf') {
+      let strategy = pdfStrategy(bytes.byteLength, null)
+      if (strategy !== 'native') {
+        text = (await extractText(bytes, mime)).slice(0, MAX_DOC_CHARS)
+        strategy = pdfStrategy(bytes.byteLength, text.trim().length)
+      }
+      if (strategy === 'too_large') throw new Error('This scanned PDF is too large to analyse. Please upload a file under 14 MB.')
+      if (strategy === 'native') files.push({ mimeType: mime, data: Buffer.from(bytes).toString('base64') })
+    } else if (isImage(mime)) {
+      if (bytes.byteLength > MAX_INLINE_BYTES) throw new Error('Images must be 14 MB or smaller to analyse.')
+      files.push({ mimeType: mime, data: Buffer.from(bytes).toString('base64') })
+    } else {
+      text = (await extractText(bytes, mime)).slice(0, MAX_DOC_CHARS)
+      if (text.trim().length < 20) throw new Error('No readable text was found in this document.')
+    }
+
+    // Atomic reservation (service role, after the ownership checks above). Accepted requests count even if the AI fails,
+    // so repeated failures cannot cause unlimited AI usage.
+    const limit = dailyLimit(process.env['DOCUMENT_ANALYSIS_DAILY_LIMIT'])
+    const { adminClient } = await import('@/lib/server/admin.server')
+    const { data: used, error: quotaErr } = await adminClient().rpc('reserve_document_analysis', { _user_id: user.id, _limit: limit })
+    if (quotaErr) throw new Error('Could not check your daily analysis allowance. Please try again.')
+    if ((used as number) < 0) {
+      throw new Error(`You have used all ${limit} document analyses for today. Your allowance resets at midnight Tanzania time.`)
+    }
+
     const { data: job } = await supabase
       .from('document_processing')
       .insert({ user_id: user.id, document_id: doc.id, kind: data.kind })
       .select('id')
       .single()
     await supabase.from('documents').update({ status: 'processing' }).eq('id', doc.id)
+    const source = files.length ? [{ role: 'user' as const, content: `Analyse the attached file "${doc.name}".` }] : [{ role: 'user' as const, content: text }]
     try {
-      const file = await supabase.storage.from('documents').download(doc.storage_path)
-      if (file.error) throw new Error(file.error.message)
-      const text = (await extractText(new Uint8Array(await file.data.arrayBuffer()), doc.mime_type, doc.name)).slice(0, MAX_DOC_CHARS)
-      if (text.trim().length < 20) throw new Error('No readable text was found in this document.')
       let result: unknown
       if (data.kind === 'summary') {
-        const summary = await complete(
-          [
-            { role: 'system', content: 'Summarise the document in at most 8 markdown bullet points, then list action items if any. No emoji.' },
-            { role: 'user', content: text },
-          ],
-          { sessionId: `doc-${doc.id}` },
+        const summary = await generate(
+          [{ role: 'system', content: 'Summarise the document in at most 8 markdown bullet points, then list action items if any. Include information shown in tables, charts or images. No emoji.' }, ...source],
+          { files },
         )
+        if (summary.length < 10) throw new AiError('empty', 'The AI service returned an unusable summary.')
         result = { summary }
         await supabase.from('documents').update({ summary, status: 'ready' }).eq('id', doc.id)
       } else {
-        const reply = await complete(
+        const reply = await generate(
           [
             {
               role: 'system',
               content:
-                'Extract the recurring weekly timetable from the text. Reply with JSON only: {"name": string, "entries": [{"title": string, "weekday": 0-6 (0=Sunday), "start_time": "HH:MM", "end_time": "HH:MM", "location": string|null}]}. Use only what the text states; if nothing is found return {"name":"Timetable","entries":[]}.',
+                'Extract the recurring weekly timetable. weekday is 0-6 with 0=Sunday; times are 24-hour HH:MM. Use only what the document states; if no timetable is found return name "Timetable" and an empty entries list.',
             },
-            { role: 'user', content: text },
+            ...source,
           ],
-          { sessionId: `doc-${doc.id}`, json: true },
+          { files, schema: TIMETABLE_SCHEMA },
         )
-        const parsed = z
-          .object({
-            name: z.string().max(160).catch('Timetable'),
-            entries: z
-              .array(
-                z.object({
-                  title: z.string().min(1).max(200),
-                  weekday: z.coerce.number().int().min(0).max(6),
-                  start_time: z.string().regex(/^\d{1,2}:\d{2}/),
-                  end_time: z.string().regex(/^\d{1,2}:\d{2}/),
-                  location: z.string().max(200).nullable().optional(),
-                }),
-              )
-              .max(200),
-          })
-          .parse(parseJsonReply(reply))
-        result = parsed
+        const parsed = TimetableResult.safeParse(parseJsonReply(reply))
+        if (!parsed.success) throw new AiError('empty', 'The AI returned a timetable in an invalid format. Nothing was saved.')
+        result = parsed.data
         await supabase.from('documents').update({ status: 'ready' }).eq('id', doc.id)
       }
       await supabase.from('document_processing').update({ status: 'succeeded', result }).eq('id', job!.id)
-      return { jobId: job!.id as string, result: result as Record<string, any> }
+      return { jobId: job!.id as string, result: result as Record<string, any>, remaining: limit - (used as number) }
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Processing failed'
+      const message = e instanceof AiError || e instanceof Error ? e.message : 'Processing failed'
       await supabase.from('document_processing').update({ status: 'failed', error: message }).eq('id', job!.id)
       await supabase.from('documents').update({ status: 'failed' }).eq('id', doc.id)
       throw new Error(message)

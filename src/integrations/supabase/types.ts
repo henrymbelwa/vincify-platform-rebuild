@@ -407,6 +407,30 @@ export type Database = {
         }
         Relationships: []
       }
+      document_analysis_usage: {
+        Row: {
+          created_at: string
+          day: string
+          updated_at: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          updated_at?: string
+          used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          updated_at?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_processing: {
         Row: {
           created_at: string
@@ -1486,6 +1510,10 @@ export type Database = {
     }
     Functions: {
       claim_referral: { Args: { _code: string }; Returns: boolean }
+      reserve_document_analysis: {
+        Args: { _limit: number; _user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       document_status: "uploaded" | "processing" | "ready" | "failed"
