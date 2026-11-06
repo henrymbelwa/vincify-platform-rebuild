@@ -1,7 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
+// Env vars win; the fallbacks are the connected project's public URL and
+// publishable key (public by design — never put the service-role key here).
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || 'https://rchpocunkrehnzwqmett.supabase.co'
+const key =
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+  'sb_publishable_OEdDoa-LGMJqZjMEGXfAvQ_8TncJ43L'
 
 export const isConfigured = Boolean(url && key)
 
