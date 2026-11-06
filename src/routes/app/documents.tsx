@@ -194,10 +194,10 @@ function Documents() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <Button size="xs" variant="outline" disabled={Boolean(busy)} onClick={() => (d.summary ? setSummary(d) : run(d, 'summary'))}>
+                  <Button size="xs" variant="outline" disabled={Boolean(busy) || (!d.summary && outOfQuota)} onClick={() => (d.summary ? setSummary(d) : run(d, 'summary'))}>
                     {busy === `${d.id}-summary` ? <Loader2 className="animate-spin" /> : <Sparkles />} {d.summary ? 'Summary' : 'Summarise'}
                   </Button>
-                  <Button size="xs" variant="outline" disabled={Boolean(busy)} onClick={() => run(d, 'timetable')}>
+                  <Button size="xs" variant="outline" disabled={Boolean(busy) || outOfQuota} onClick={() => run(d, 'timetable')}>
                     {busy === `${d.id}-timetable` ? <Loader2 className="animate-spin" /> : <CalendarClock />} Extract timetable
                   </Button>
                   <Button size="icon-xs" variant="ghost" aria-label={`Download ${d.name}`} onClick={() => download(d)}>
