@@ -24,8 +24,13 @@ export function NotFoundPage() {
   )
 }
 
-export function RouteErrorPage({ reset }: ErrorComponentProps) {
+export function RouteErrorPage({ error, reset }: ErrorComponentProps) {
   const router = useRouter()
+
+  // Always log the real error so failures are never opaque.
+  console.error('[route-error]', error)
+
+  const detail = error instanceof Error ? error.message : String(error)
 
   return (
     <main className="grid min-h-svh place-items-center px-6 py-16">
@@ -36,11 +41,18 @@ export function RouteErrorPage({ reset }: ErrorComponentProps) {
         <p role="alert" className="text-muted-foreground">
           Please try again, or return to the home page.
         </p>
+        {import.meta.env.DEV && detail && (
+          <p className="rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs break-words text-muted-foreground">
+            {detail}
+          </p>
+        )}
         <div className="flex flex-wrap justify-center gap-3">
           <Button
             onClick={() => {
               void router.invalidate()
               reset()
+              // A clean reload refetches any interrupted module chunks.
+              window.location.reload()
             }}
           >
             Try again
