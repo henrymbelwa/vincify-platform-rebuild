@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Empty, LoadingRows, PageHeader, Panel } from '@/components/app/page'
 import { Markdown } from '@/components/app/markdown'
 import { selectClass } from '@/components/app/new-task-dialog'
-import { analyzeDocument } from '@/lib/api.functions'
+import { analyzeDocument, getAnalysisQuota } from '@/lib/api.functions'
+import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, resolveMime } from '@/lib/documents'
 import { WEEKDAYS } from '@/lib/dates'
 import { currentUserId, must, sb } from '@/lib/supabase'
 import type { DocumentRow } from '@/lib/types'
@@ -21,12 +22,6 @@ export const Route = createFileRoute('/app/documents')({
   component: Documents,
 })
 
-const MAX = 20 * 1024 * 1024
-const ACCEPT: Record<string, string> = {
-  'application/pdf': 'PDF',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
-  'text/plain': 'TXT',
-}
 interface Entry {
   title: string
   weekday: number
@@ -38,6 +33,9 @@ interface Entry {
 function Documents() {
   const qc = useQueryClient()
   const analyze = useServerFn(analyzeDocument)
+  const fetchQuota = useServerFn(getAnalysisQuota)
+  const quota = useQuery({ queryKey: ['analysis-quota'], queryFn: () => fetchQuota() })
+  const outOfQuota = quota.data ? quota.data.remaining <= 0 : false
   const input = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
@@ -64,13 +62,12 @@ function Documents() {
     setUploading(true)
     const uid = await currentUserId()
     for (const file of Array.from(files)) {
-      const isDocx = file.name.toLowerCase().endsWith('.docx')
-      const type = ACCEPT[file.type] ? file.type : isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''
+      const type = resolveMime(file.type, file.name)
       if (!type) {
-        toast.error(`${file.name}: only PDF, DOCX and TXT files are supported`)
+        toast.error(`${file.name}: only ${Object.values(ACCEPTED_TYPES).join(', ')} files are supported`)
         continue
       }
-      if (file.size > MAX) {
+      if (file.size > MAX_UPLOAD_BYTES) {
         toast.error(`${file.name}: files must be 20 MB or smaller`)
         continue
       }
@@ -107,6 +104,7 @@ function Documents() {
     } finally {
       setBusy(null)
       qc.invalidateQueries({ queryKey: ['documents'] })
+      qc.invalidateQueries({ queryKey: ['analysis-quota'] })
     }
   }
 
@@ -167,9 +165,16 @@ function Documents() {
       >
         {uploading ? <Loader2 className="size-6 animate-spin text-primary" /> : <Upload className="size-6 text-primary" />}
         <span className="mt-3 text-sm font-medium">{uploading ? 'Uploading' : 'Drop files here or click to upload'}</span>
-        <span className="mt-1 text-xs text-muted-foreground">PDF, DOCX or TXT, up to 20 MB</span>
+        <span className="mt-1 text-xs text-muted-foreground">PDF, DOCX, TXT, JPG, PNG or WEBP, up to 20 MB</span>
       </button>
-      <input ref={input} type="file" multiple hidden accept=".pdf,.docx,.txt" onChange={(e) => upload(e.target.files)} />
+      {quota.data && (
+        <p className={cn('text-xs', outOfQuota ? 'text-destructive' : 'text-muted-foreground')} aria-live="polite">
+          {outOfQuota
+            ? `You have used all ${quota.data.limit} document analyses for today. Your allowance resets at midnight Tanzania time.`
+            : `${quota.data.remaining} of ${quota.data.limit} analyses remaining today`}
+        </p>
+      )}
+      <input ref={input} type="file" multiple hidden accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.webp" onChange={(e) => upload(e.target.files)} />
 
       <Panel title="Documents">
         {docs.isLoading ? (
