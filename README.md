@@ -20,9 +20,9 @@ AI-powered personal productivity workspace: tasks, daily, weekly and monthly pla
 3. Deploy. `vercel.json` sets the build and registers the automation runner on `/api/cron/automations`. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically.
    - The schedule (every 15 minutes) needs a Vercel Pro plan. On Hobby, Vercel only allows daily jobs, so instead call `GET /api/cron/automations` every 15 minutes from any external scheduler (for example cron-job.org) with the header `Authorization: Bearer YOUR_CRON_SECRET`.
 
-## AI providers
+## AI
 
-`AI_PROVIDER=langflow` uses your Langflow flow (`/api/v1/run/{flow_id}`), `AI_PROVIDER=openai` uses any OpenAI-compatible API. With `AI_FALLBACK=true` the other provider is tried when the primary fails.
+Vincify uses Google Gemini directly from the server. Set `GEMINI_API_KEY`; optionally `GEMINI_MODEL` (default `gemini-3.5-flash-lite`) and `GEMINI_TIMEOUT_MS` (default 45000). Documents (PDF, DOCX, TXT, JPG, PNG, WEBP) are uploaded straight to private Supabase storage; the server reads them after checking ownership. Each user gets `DOCUMENT_ANALYSIS_DAILY_LIMIT` analyses per day (default 3), reset at midnight Tanzania time. Chat is not limited.
 
 ## Email
 
