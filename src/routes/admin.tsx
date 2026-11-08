@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, Outlet, createFileRoute, redirect, useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, isRedirect, redirect, useLocation, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -46,9 +46,28 @@ export const Route = createFileRoute('/admin')({
       return { admin: res }
     } catch (err: any) {
       // If the error was already a TanStack Router redirect, rethrow it
-      if (err && typeof err === 'object' && ('to' in err || 'href' in err || 'status' in err || 'statusCode' in err)) {
+      if (isRedirect(err)) {
         throw err
       }
+
+      const errorMessage = typeof err === 'string' ? err : err?.message || ''
+      const isUnauthenticated =
+        err?.status === 401 ||
+        err?.statusCode === 401 ||
+        errorMessage.includes('Auth session missing') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('Missing token') ||
+        errorMessage.includes('Token validation failed')
+
+      if (isUnauthenticated) {
+        console.warn('[AdminRoute:beforeLoad] Session invalid or missing, redirecting to sign-in.')
+        await client.auth.signOut().catch(() => {})
+        throw redirect({
+          to: '/auth',
+          search: { mode: 'signin', redirect: '/admin' } as any,
+        })
+      }
+
       console.error('[AdminRoute:beforeLoad] Admin verification check failed:', err)
       // DO NOT redirect to /app on server or verification errors: let errorComponent render the error state
       throw err
@@ -85,11 +104,50 @@ function AdminLayout() {
 
   useEffect(() => {
     if (ready && !session) {
-      navigate({ to: '/auth', replace: true })
+      navigate({ to: '/auth', search: { mode: 'signin', redirect: '/admin' } as any, replace: true })
+      return
     }
-  }, [ready, session, navigate])
+    if (adminCheck.isError) {
+      const err = adminCheck.error as any
+      const msg = err?.message || ''
+      if (
+        err?.status === 401 ||
+        err?.statusCode === 401 ||
+        msg.includes('Auth session missing') ||
+        msg.includes('Unauthorized') ||
+        msg.includes('Missing token')
+      ) {
+        sb().auth.signOut().catch(() => {})
+        navigate({ to: '/auth', search: { mode: 'signin', redirect: '/admin' } as any, replace: true })
+      }
+    }
+  }, [ready, session, adminCheck.isError, adminCheck.error, navigate])
 
   if (!session || adminCheck.isLoading) return <Splash />
+
+  // If check failed with a non-auth error (e.g. database/network), show error panel with retry
+  if (adminCheck.isError) {
+    const errorMsg = (adminCheck.error as any)?.message || 'Failed to verify administrative privileges'
+    return (
+      <main className="grid min-h-svh place-items-center px-6 text-center">
+        <div className="max-w-sm space-y-4">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <ShieldAlert className="size-6" />
+          </div>
+          <h1 className="text-xl font-semibold">Administrator Verification Error</h1>
+          <p className="text-sm text-muted-foreground">{errorMsg}</p>
+          <div className="pt-2 flex justify-center gap-3">
+            <Button variant="outline" onClick={() => adminCheck.refetch()}>
+              Retry
+            </Button>
+            <Button onClick={() => navigate({ to: '/app', replace: true })}>
+              Return to Workspace
+            </Button>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   // If check returned not admin and finished loading without throwing, show Access Denied rather than blind redirect
   if (adminCheck.data && !adminCheck.data.isAdmin) {

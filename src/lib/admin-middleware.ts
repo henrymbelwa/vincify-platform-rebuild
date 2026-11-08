@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { requireUser } from './auth-middleware'
+import { attachBearer, requireUser } from './auth-middleware'
 import { adminClient } from './server/admin.server'
 
 /**
@@ -8,7 +8,7 @@ import { adminClient } from './server/admin.server'
  * Also provisions the initial administrator and verifies if a mandatory password change is pending.
  */
 export const checkIsAdmin = createServerFn({ method: 'GET' })
-  .middleware([requireUser])
+  .middleware([attachBearer, requireUser])
   .handler(async ({ context }) => {
     const { user } = context
     const db = adminClient()
@@ -78,7 +78,7 @@ export const checkIsAdmin = createServerFn({ method: 'GET' })
  * Updates password via admin auth, records audit log, and clears must_change_password.
  */
 export const completeAdminPasswordChange = createServerFn({ method: 'POST' })
-  .middleware([requireUser])
+  .middleware([attachBearer, requireUser])
   .inputValidator((d: unknown) =>
     z
       .object({

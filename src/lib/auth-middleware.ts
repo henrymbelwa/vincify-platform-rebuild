@@ -86,12 +86,18 @@ export const attachBearer = createMiddleware({ type: 'function' }).client(async 
 })
 
 /** Server side: verify the token and expose a Supabase client that runs under RLS as that user. */
-export const requireUser = createMiddleware({ type: 'function' }).server(async ({ next }) => {
-  const header = getRequestHeader('authorization') ?? ''
-  const token = header.startsWith('Bearer ') ? header.slice(7) : ''
-  if (!token) throw new AuthError('Unauthorized: Missing token', 401)
+export const requireUser = createMiddleware({ type: 'function' })
+  .client(async ({ next }) => {
+    const { data } = await sb().auth.getSession()
+    const token = data.session?.access_token
+    return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  })
+  .server(async ({ next }) => {
+    const header = getRequestHeader('authorization') ?? ''
+    const token = header.startsWith('Bearer ') ? header.slice(7) : ''
+    if (!token) throw new AuthError('Unauthorized: Missing token', 401)
 
-  const { supabase, user } = await authenticateToken(token)
+    const { supabase, user } = await authenticateToken(token)
 
-  return next({ context: { supabase, user } })
-})
+    return next({ context: { supabase, user } })
+  })
