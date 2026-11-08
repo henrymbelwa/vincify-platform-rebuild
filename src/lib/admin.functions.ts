@@ -1,33 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireUser } from './auth-middleware'
-import { adminClient } from './server/admin.server'
-import { encryptSecret } from './server/crypto.server'
-import { testProviderConnection, type AiProvider, type ProviderConfig } from './server/ai.server'
-
-async function assertAdminUser(userId: string, email?: string) {
-  const db = adminClient()
-  const { data: adminRecord } = await db
-    .from('admin_users')
-    .select('role, is_active')
-    .eq('id', userId)
-    .eq('is_active', true)
-    .maybeSingle()
-
-  const initialEmail = (process.env['INITIAL_ADMIN_EMAIL'] || 'adminvincify@gmail.com').toLowerCase().trim()
-  const userEmail = (email || '').toLowerCase().trim()
-
-  if (!adminRecord && initialEmail !== userEmail) {
-    throw new Error('Forbidden: Administrative access required')
-  }
-
-  return adminRecord?.role || 'superadmin'
-}
 
 /** Fetch administrative metrics */
 export const getAdminMetrics = createServerFn({ method: 'GET' })
   .middleware([requireUser])
   .handler(async ({ context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 
@@ -68,6 +48,8 @@ export const getAdminUsers = createServerFn({ method: 'GET' })
     z.object({ search: z.string().optional(), limit: z.number().default(50) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 
@@ -92,6 +74,8 @@ export const getAdminDocuments = createServerFn({ method: 'GET' })
   .middleware([requireUser])
   .inputValidator((d: unknown) => z.object({ limit: z.number().default(50) }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 
@@ -109,6 +93,8 @@ export const getAdminDocuments = createServerFn({ method: 'GET' })
 export const getAdminAiConfig = createServerFn({ method: 'GET' })
   .middleware([requireUser])
   .handler(async ({ context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 
@@ -143,6 +129,9 @@ export const updateAdminAiConfig = createServerFn({ method: 'POST' })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
+    const { encryptSecret } = await import('./server/crypto.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 
@@ -150,7 +139,7 @@ export const updateAdminAiConfig = createServerFn({ method: 'POST' })
       active_provider: data.activeProvider,
       model_name: data.modelName,
       fallback_provider: data.fallbackProvider || null,
-      fallback_enabled: data.fallbackEnabled,
+      fallbackEnabled: data.fallbackEnabled,
       api_base_url: data.apiBaseUrl || null,
       timeout_ms: data.timeoutMs,
       daily_analysis_limit: data.dailyAnalysisLimit,
@@ -195,10 +184,12 @@ export const testAdminAiProvider = createServerFn({ method: 'POST' })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { testProviderConnection } = await import('./server/ai.server')
     await assertAdminUser(context.user.id, context.user.email)
 
-    const cfg: ProviderConfig = {
-      provider: data.provider as AiProvider,
+    const cfg: any = {
+      provider: data.provider,
       model: data.model,
       apiKey: data.apiKey?.trim() || '',
       baseUrl: data.baseUrl || undefined,
@@ -226,6 +217,8 @@ export const getAdminAuditLogs = createServerFn({ method: 'GET' })
   .middleware([requireUser])
   .inputValidator((d: unknown) => z.object({ limit: z.number().default(50) }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
+    const { assertAdminUser } = await import('./server/admin-auth.server')
+    const { adminClient } = await import('./server/admin.server')
     await assertAdminUser(context.user.id, context.user.email)
     const db = adminClient()
 

@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth'
 const search = z.object({
   mode: z.enum(['signin', 'signup', 'forgot']).catch('signin').optional(),
   ref: z.string().max(16).optional(),
+  redirect: z.string().optional(),
 })
 
 export const Route = createFileRoute('/auth')({
@@ -47,7 +48,7 @@ const signupSchema = z.object({
 })
 
 function AuthPage() {
-  const { mode = 'signin', ref } = Route.useSearch()
+  const { mode = 'signin', ref, redirect: destRedirect } = Route.useSearch()
   const navigate = useNavigate()
   const { session, ready } = useAuth()
   const [busy, setBusy] = useState(false)
@@ -55,13 +56,16 @@ function AuthPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    if (ready && session) navigate({ to: '/app', replace: true })
-  }, [ready, session, navigate])
+    if (ready && session) {
+      const target = destRedirect && destRedirect.startsWith('/') ? destRedirect : '/app'
+      navigate({ to: target as any, replace: true })
+    }
+  }, [ready, session, destRedirect, navigate])
 
   const setMode = (m: 'signin' | 'signup' | 'forgot') => {
     setErrors({})
     setSent(null)
-    navigate({ to: '/auth', search: { mode: m, ref }, replace: true })
+    navigate({ to: '/auth', search: { mode: m, ref, redirect: destRedirect }, replace: true })
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -98,7 +102,8 @@ function AuthPage() {
       } else {
         const { error } = await sb().auth.signInWithPassword({ email: String(f.email).trim(), password: String(f.password) })
         if (error) throw error
-        navigate({ to: '/app', replace: true })
+        const target = destRedirect && destRedirect.startsWith('/') ? destRedirect : '/app'
+        navigate({ to: target as any, replace: true })
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong')

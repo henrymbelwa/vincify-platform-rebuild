@@ -42,7 +42,9 @@ function Assistant() {
     queryFn: async () => must(await sb().from('messages').select('*').eq('conversation_id', active!).order('created_at')) as Message[],
   })
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [msgs.data, pending])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [msgs.data, pending])
 
   async function submit(text: string) {
     const content = text.trim()

@@ -107,21 +107,23 @@ export interface Habit {
   user_id: string
   title: string
   description: string | null
-  frequency: 'daily' | 'weekly'
-  target_days_per_week: number
-  category: string | null
-  color: string | null
-  archived: boolean
+  frequency: string
+  target_days_per_week?: number
+  category?: string | null
+  color?: string | null
+  is_active?: boolean
+  archived?: boolean
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
 export interface HabitLog {
   id: string
   user_id: string
   habit_id: string
-  completed_date: string
-  notes: string | null
+  log_date: string
+  completed: boolean
+  notes?: string | null
   created_at: string
 }
 

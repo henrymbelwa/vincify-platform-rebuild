@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Logo, LogoMark } from '@/components/brand/logo'
 import { Splash } from '@/components/brand/splash'
+import { RouteErrorPage } from '@/components/error-pages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,20 +24,40 @@ import { ThemeToggle } from '@/components/app/theme-toggle'
 import { checkIsAdmin, completeAdminPasswordChange } from '@/lib/admin-middleware'
 import { signOut, useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { sb } from '@/lib/supabase'
 
 export const Route = createFileRoute('/admin')({
   ssr: false,
   beforeLoad: async () => {
+    const client = sb()
+    const { data } = await client.auth.getSession()
+    if (!data.session) {
+      throw redirect({
+        to: '/auth',
+        search: { mode: 'signin', redirect: '/admin' } as any,
+      })
+    }
+
     try {
       const res = await checkIsAdmin()
-      if (!res.isAdmin) throw redirect({ to: '/app' })
-    } catch {
-      throw redirect({ to: '/auth' })
+      if (!res.isAdmin) {
+        throw redirect({ to: '/app' })
+      }
+      return { admin: res }
+    } catch (err: any) {
+      // If the error was already a TanStack Router redirect, rethrow it
+      if (err && typeof err === 'object' && ('to' in err || 'href' in err || 'status' in err || 'statusCode' in err)) {
+        throw err
+      }
+      console.error('[AdminRoute:beforeLoad] Admin verification check failed:', err)
+      // DO NOT redirect to /app on server or verification errors: let errorComponent render the error state
+      throw err
     }
   },
   head: () => ({
     meta: [{ title: 'Vincify Administrator Portal' }, { name: 'robots', content: 'noindex,nofollow' }],
   }),
+  errorComponent: RouteErrorPage,
   pendingComponent: () => <Splash />,
   component: AdminLayout,
 })
@@ -63,11 +84,34 @@ function AdminLayout() {
   })
 
   useEffect(() => {
-    if (ready && !session) navigate({ to: '/auth', replace: true })
-    if (adminCheck.data && !adminCheck.data.isAdmin) navigate({ to: '/app', replace: true })
-  }, [ready, session, adminCheck.data, navigate])
+    if (ready && !session) {
+      navigate({ to: '/auth', replace: true })
+    }
+  }, [ready, session, navigate])
 
   if (!session || adminCheck.isLoading) return <Splash />
+
+  // If check returned not admin and finished loading without throwing, show Access Denied rather than blind redirect
+  if (adminCheck.data && !adminCheck.data.isAdmin) {
+    return (
+      <main className="grid min-h-svh place-items-center px-6 text-center">
+        <div className="max-w-sm space-y-4">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <ShieldAlert className="size-6" />
+          </div>
+          <h1 className="text-xl font-semibold">Access Denied</h1>
+          <p className="text-sm text-muted-foreground">
+            Your account does not have active administrative privileges for the Vincify Central Administration.
+          </p>
+          <div className="pt-2">
+            <Button onClick={() => navigate({ to: '/app', replace: true })}>
+              Return to Workspace
+            </Button>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   // If initial password change is mandatory, enforce screen blocker
   if (adminCheck.data?.mustChangePassword) {

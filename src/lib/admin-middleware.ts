@@ -35,14 +35,22 @@ export const checkIsAdmin = createServerFn({ method: 'GET' })
 
     if (initialEmail && userEmail === initialEmail) {
       // Auto-provision initial superadmin with mandatory password change flag set to true
-      await db.from('admin_users').upsert({
-        id: user.id,
-        role: 'superadmin',
-        is_active: true,
-        must_change_password: true,
-      })
+      const { error: upsertErr } = await db.from('admin_users').upsert(
+        {
+          id: user.id,
+          role: 'superadmin',
+          is_active: true,
+          must_change_password: true,
+        },
+        { onConflict: 'id' },
+      )
 
-      await db.from('admin_audit_logs').insert({
+      if (upsertErr) {
+        console.error('[checkIsAdmin] Failed to bootstrap superadmin:', upsertErr)
+        throw new Error(`Superadmin bootstrap failed: ${upsertErr.message}`)
+      }
+
+      const { error: auditErr } = await db.from('admin_audit_logs').insert({
         admin_id: user.id,
         admin_email: user.email,
         action: 'BOOTSTRAP_SUPERADMIN',
@@ -50,6 +58,10 @@ export const checkIsAdmin = createServerFn({ method: 'GET' })
         target_id: user.id,
         details: { reason: 'Initial superadmin account provisioned with mandatory password change requirement' },
       })
+
+      if (auditErr) {
+        console.warn('[checkIsAdmin] Non-fatal: Failed to write bootstrap audit log:', auditErr)
+      }
 
       return {
         isAdmin: true,

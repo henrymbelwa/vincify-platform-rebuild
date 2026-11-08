@@ -47,8 +47,8 @@ function HabitsPage() {
       const res = await sb()
         .from('habit_logs')
         .select('*')
-        .gte('completed_date', pastDays[0]!)
-        .lte('completed_date', todayStr)
+        .gte('log_date', pastDays[0]!)
+        .lte('log_date', todayStr)
       return must(res) as HabitLog[]
     },
   })
@@ -82,9 +82,9 @@ function HabitsPage() {
   const toggleLog = useMutation({
     mutationFn: async ({ habitId, date, completed }: { habitId: string; date: string; completed: boolean }) => {
       if (completed) {
-        return must(await sb().from('habit_logs').delete().eq('habit_id', habitId).eq('completed_date', date))
+        return must(await sb().from('habit_logs').delete().eq('habit_id', habitId).eq('log_date', date))
       }
-      return must(await sb().from('habit_logs').insert({ user_id: user.id, habit_id: habitId, completed_date: date }))
+      return must(await sb().from('habit_logs').insert({ user_id: user.id, habit_id: habitId, log_date: date, completed: true }))
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habit_logs'] })
@@ -95,7 +95,7 @@ function HabitsPage() {
   const logList = logs.data ?? []
 
   // Compute stats
-  const completedToday = habitList.filter((h) => logList.some((l) => l.habit_id === h.id && l.completed_date === todayStr)).length
+  const completedToday = habitList.filter((h) => logList.some((l) => l.habit_id === h.id && l.log_date === todayStr && l.completed)).length
   const totalHabits = habitList.length
 
   // Calculate streaks
@@ -103,7 +103,7 @@ function HabitsPage() {
     let streak = 0
     for (let i = 13; i >= 0; i--) {
       const d = pastDays[i]!
-      const done = logList.some((l) => l.habit_id === habitId && l.completed_date === d)
+      const done = logList.some((l) => l.habit_id === habitId && l.log_date === d && l.completed)
       if (done) streak++
       else if (i !== 13) break // don't break if today isn't done yet, check yesterday
     }
@@ -160,7 +160,7 @@ function HabitsPage() {
 
             {habitList.map((h) => {
               const currentStreak = getStreak(h.id)
-              const doneToday = logList.some((l) => l.habit_id === h.id && l.completed_date === todayStr)
+              const doneToday = logList.some((l) => l.habit_id === h.id && l.log_date === todayStr && l.completed)
 
               return (
                 <div key={h.id} className="flex flex-col gap-3 rounded-lg border p-3 sm:grid sm:grid-cols-12 sm:items-center">
@@ -190,7 +190,7 @@ function HabitsPage() {
 
                   <div className="col-span-5 grid grid-cols-7 gap-1">
                     {pastDays.slice(7).map((d) => {
-                      const isDone = logList.some((l) => l.habit_id === h.id && l.completed_date === d)
+                      const isDone = logList.some((l) => l.habit_id === h.id && l.log_date === d && l.completed)
                       const isToday = d === todayStr
                       return (
                         <button

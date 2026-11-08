@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ChevronsLeft, ChevronsRight, LogOut, MoreHorizontal, Settings, UserRound } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, LogOut, MoreHorizontal, Settings, ShieldCheck, UserRound } from 'lucide-react'
 import { Logo, LogoMark } from '@/components/brand/logo'
 import {
   DropdownMenu,
@@ -13,6 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { navGroups, type NavItem } from '@/lib/navigation'
 import { initials, signOut, useUser } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { checkIsAdmin } from '@/lib/admin-middleware'
+import { useQuery } from '@tanstack/react-query'
 
 const itemBase =
   'group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none'
@@ -66,6 +68,14 @@ export function SidebarContent({
 }) {
   const user = useUser()
   const navigate = useNavigate()
+
+  const adminQuery = useQuery({
+    queryKey: ['admin_check'],
+    queryFn: () => checkIsAdmin(),
+    staleTime: 60_000,
+  })
+
+  const isAdmin = Boolean(adminQuery.data?.isAdmin)
 
   return (
     <div className="flex h-full flex-col">
@@ -166,6 +176,17 @@ export function SidebarContent({
               <span className="block text-xs text-muted-foreground">{user.email}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isAdmin && (
+              <>
+                <DropdownMenuItem
+                  className="text-brand-purple focus:text-brand-purple font-medium cursor-pointer"
+                  onSelect={() => navigate({ to: '/admin' })}
+                >
+                  <ShieldCheck className="size-4 mr-2" /> Admin Portal
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onSelect={() => navigate({ to: '/app/profile' })}>
               <UserRound /> Profile
             </DropdownMenuItem>

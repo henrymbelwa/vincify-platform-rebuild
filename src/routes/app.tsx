@@ -40,7 +40,9 @@ function AppLayout() {
   const [tourOpen, setTourOpen] = useState(false)
   const [query, setQuery] = useState('')
 
-  useEffect(() => setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1'), [])
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1')
+  }, [])
   useEffect(() => {
     if (tour === 1) setTourOpen(true)
   }, [tour])
