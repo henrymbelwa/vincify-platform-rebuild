@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartNoAxesCombined, Download, Printer } from 'lucide-react'
+import { Bookmark, ChartNoAxesCombined, Check, Download, History, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Empty, PageHeader, Panel, Stat } from '@/components/app/page'
@@ -12,7 +13,7 @@ import { addDays, startOfDay } from '@/lib/dates'
 import { MIN_TREND_DAYS, dayKey, taskStats } from '@/lib/metrics'
 import { useTasks } from '@/lib/queries'
 import { must, sb } from '@/lib/supabase'
-import type { TaskStatus } from '@/lib/types'
+import type { SavedReport, TaskStatus } from '@/lib/types'
 
 export const Route = createFileRoute('/app/reports')({
   head: () => ({ meta: [{ title: 'Reports & Analytics - Vincify' }] }),
@@ -31,18 +32,67 @@ const STATUS_COLOR: Record<TaskStatus, string> = {
 
 function Reports() {
   const user = useUser()
+  const queryClient = useQueryClient()
   const tasks = useTasks()
   const [period, setPeriod] = useState<Period>('week')
   const end = addDays(startOfDay(), 1)
   const start = addDays(end, -DAYS[period])
+
   const checkins = useQuery({
     queryKey: ['checkins', 'report', period],
-    queryFn: async () => must(await sb().from('daily_checkins').select('day,mood,energy,reviewed_at').gte('day', start.toISOString().slice(0, 10))) as {
-      day: string
-      mood: number | null
-      energy: number | null
-      reviewed_at: string | null
-    }[],
+    queryFn: async () =>
+      must(
+        await sb()
+          .from('daily_checkins')
+          .select('day,mood,energy,reviewed_at')
+          .gte('day', start.toISOString().slice(0, 10)),
+      ) as {
+        day: string
+        mood: number | null
+        energy: number | null
+        reviewed_at: string | null
+      }[],
+  })
+
+  // Saved snapshots from reports table
+  const savedReports = useQuery({
+    queryKey: ['saved_reports'],
+    queryFn: async () => {
+      const res = await sb().from('reports').select('*').order('created_at', { ascending: false })
+      return must(res) as SavedReport[]
+    },
+  })
+
+  const saveSnapshot = useMutation({
+    mutationFn: async () => {
+      const pStart = start.toISOString().slice(0, 10)
+      const pEnd = end.toISOString().slice(0, 10)
+      const reportPeriod = period === 'quarter' ? 'monthly' : period
+      const payload = {
+        user_id: user.id,
+        period: reportPeriod,
+        period_start: pStart,
+        period_end: pEnd,
+        data: {
+          period,
+          stats: data.stats,
+          activeDays: data.activeDays,
+          series: data.series,
+          categories: data.categories,
+          avgMood: avg('mood'),
+          avgEnergy: avg('energy'),
+          totalTasks: data.inPeriod.length,
+          generatedAt: new Date().toISOString(),
+        },
+        narrative: `Productivity snapshot for ${pStart} to ${pEnd}. Completion rate: ${data.stats.completionRate ?? 0}%.`,
+      }
+      return must(await sb().from('reports').upsert(payload, { onConflict: 'user_id,period,period_start' }))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved_reports'] })
+      toast.success('Report snapshot saved successfully')
+    },
+    onError: (err: any) => toast.error(err.message || 'Could not save report snapshot'),
   })
 
   const data = useMemo(() => {
@@ -59,13 +109,20 @@ function Reports() {
       }),
     )
     const byDay = new Map<string, number>()
-    for (const t of all) if (t.completed_at && new Date(t.completed_at) >= start) byDay.set(dayKey(t.completed_at, user.timezone), (byDay.get(dayKey(t.completed_at, user.timezone)) ?? 0) + 1)
+    for (const t of all)
+      if (t.completed_at && new Date(t.completed_at) >= start)
+        byDay.set(dayKey(t.completed_at, user.timezone), (byDay.get(dayKey(t.completed_at, user.timezone)) ?? 0) + 1)
     const series = Array.from({ length: DAYS[period] }, (_, i) => {
       const d = addDays(start, i)
       const k = dayKey(d, user.timezone)
-      return { day: d.toLocaleDateString([], period === 'week' ? { weekday: 'short' } : { day: 'numeric', month: 'short' }), completed: byDay.get(k) ?? 0 }
+      return {
+        day: d.toLocaleDateString([], period === 'week' ? { weekday: 'short' } : { day: 'numeric', month: 'short' }),
+        completed: byDay.get(k) ?? 0,
+      }
     })
-    const statusMix = (Object.keys(statusLabel) as TaskStatus[]).map((s) => ({ name: statusLabel[s], key: s, value: inPeriod.filter((t) => t.status === s).length })).filter((x) => x.value)
+    const statusMix = (Object.keys(statusLabel) as TaskStatus[])
+      .map((s) => ({ name: statusLabel[s], key: s, value: inPeriod.filter((t) => t.status === s).length }))
+      .filter((x) => x.value)
     const categories = new Map<string, { done: number; total: number }>()
     for (const t of inPeriod) {
       if (t.status === 'cancelled') continue
@@ -76,8 +133,16 @@ function Reports() {
       categories.set(c, v)
     }
     const activeDays = new Set([...byDay.keys()]).size
-    return { inPeriod, stats, prevStats, series, statusMix, categories: [...categories.entries()].sort((a, b) => b[1].total - a[1].total), activeDays }
-  }, [tasks.data, period, user.timezone]) // eslint-disable-line react-hooks/exhaustive-deps
+    return {
+      inPeriod,
+      stats,
+      prevStats,
+      series,
+      statusMix,
+      categories: [...categories.entries()].sort((a, b) => b[1].total - a[1].total),
+      activeDays,
+    }
+  }, [tasks.data, period, user.timezone])
 
   const ci = checkins.data ?? []
   const avg = (k: 'mood' | 'energy') => {
@@ -85,7 +150,9 @@ function Reports() {
     return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null
   }
   const delta =
-    data.stats.completionRate != null && data.prevStats.completionRate != null ? Math.round((data.stats.completionRate - data.prevStats.completionRate) * 10) / 10 : null
+    data.stats.completionRate != null && data.prevStats.completionRate != null
+      ? Math.round((data.stats.completionRate - data.prevStats.completionRate) * 10) / 10
+      : null
 
   function exportCsv() {
     const rows = [['title', 'status', 'priority', 'category', 'due_at', 'completed_at']]
@@ -98,119 +165,116 @@ function Reports() {
     URL.revokeObjectURL(a.href)
   }
 
-  const enough = data.activeDays >= MIN_TREND_DAYS
+  const savedList = savedReports.data ?? []
 
   return (
-    <div className="mx-auto max-w-content space-y-6 print:max-w-none">
+    <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Reports & Analytics"
-        description="Calculated only from your real records. Cancelled tasks never count as completed."
-        actions={
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={exportCsv} disabled={!data.inPeriod.length}>
-              <Download /> CSV
+        description="Review productivity trends, task completion velocity and save periodic snapshots."
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => saveSnapshot.mutate()} disabled={saveSnapshot.isPending}>
+              <Bookmark className="size-4 mr-1.5" />
+              Save Snapshot
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="size-4 mr-1.5" />
+              Export CSV
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer /> PDF
+              <Printer className="size-4 mr-1.5" />
+              Print
             </Button>
           </div>
         }
       />
-      <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="print:hidden">
-        <TabsList>
-          <TabsTrigger value="week">Last 7 days</TabsTrigger>
-          <TabsTrigger value="month">Last 30 days</TabsTrigger>
-          <TabsTrigger value="quarter">Last 90 days</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
-      {!data.inPeriod.length && !ci.length ? (
-        <Empty icon={ChartNoAxesCombined} title="Not enough data yet" body="Reports appear as you create and complete tasks and do daily check-ins." />
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat
-              label="Completion rate"
-              value={data.stats.completionRate == null ? 'No data' : `${data.stats.completionRate}%`}
-              hint={delta == null ? 'No previous period to compare' : `${delta >= 0 ? '+' : ''}${delta} pts vs previous period`}
-            />
-            <Stat label="Completed" value={data.stats.completed} hint={`of ${data.stats.eligible} eligible tasks`} />
-            <Stat label="Overdue" value={data.stats.overdue} hint={`${data.stats.postponed} postponed, ${data.stats.cancelled} cancelled`} />
-            <Stat label="Check-ins" value={ci.length} hint={avg('mood') ? `Avg mood ${avg('mood')}/5, energy ${avg('energy')}/5` : 'No mood data'} />
+      <div className="flex items-center justify-between">
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+          <TabsList>
+            <TabsTrigger value="week">Last 7 Days</TabsTrigger>
+            <TabsTrigger value="month">Last 30 Days</TabsTrigger>
+            <TabsTrigger value="quarter">Last 90 Days</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Stat label="Completed Tasks" value={data.stats.completed} />
+        <Stat
+          label="Completion Rate"
+          value={data.stats.completionRate != null ? `${data.stats.completionRate}%` : 'N/A'}
+          hint={delta != null ? `${delta >= 0 ? '+' : ''}${delta}% vs previous period` : undefined}
+        />
+        <Stat label="Active Days" value={`${data.activeDays} / ${DAYS[period]}`} />
+        <Stat label="Avg Mood" value={avg('mood') ? `${avg('mood')} / 5` : 'N/A'} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Completion Velocity" description="Tasks finished day by day">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.series}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                <XAxis dataKey="day" fontSize={11} tickLine={false} />
+                <YAxis allowDecimals={false} fontSize={11} tickLine={false} />
+                <Tooltip />
+                <Bar dataKey="completed" fill="var(--brand-purple)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Panel title="Tasks completed per day" className="lg:col-span-2">
-              {enough ? (
-                <div className="h-64">
-                  <ResponsiveContainer>
-                    <BarChart data={data.series}>
-                      <CartesianGrid vertical={false} stroke="var(--border)" />
-                      <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} stroke="var(--muted-foreground)" interval="preserveStartEnd" />
-                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} width={24} stroke="var(--muted-foreground)" />
-                      <Tooltip contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
-                      <Bar dataKey="completed" fill="var(--brand-purple)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  Trends appear after tasks are completed on at least {MIN_TREND_DAYS} different days. So far: {data.activeDays}.
-                </p>
-              )}
-            </Panel>
-            <Panel title="Status mix">
-              {data.statusMix.length ? (
-                <>
-                  <div className="h-44">
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie data={data.statusMix} dataKey="value" nameKey="name" innerRadius={45} outerRadius={70} paddingAngle={2}>
-                          {data.statusMix.map((s) => (
-                            <Cell key={s.key} fill={STATUS_COLOR[s.key]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {data.statusMix.map((s) => (
-                      <li key={s.key} className="flex items-center gap-2">
-                        <span className="size-2 rounded-full" style={{ background: STATUS_COLOR[s.key] }} />
-                        <span className="flex-1">{s.name}</span>
-                        <span className="text-muted-foreground">{s.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No tasks in this period.</p>
-              )}
-            </Panel>
-          </div>
-          <Panel title="By category">
-            {!data.categories.length ? (
-              <p className="text-sm text-muted-foreground">No categorised tasks in this period.</p>
+        </Panel>
+
+        <Panel title="Task Status Distribution" description="Current balance across workflow states">
+          <div className="h-64 w-full">
+            {data.statusMix.length === 0 ? (
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">No tasks in this period</div>
             ) : (
-              <ul className="space-y-3">
-                {data.categories.map(([name, v]) => (
-                  <li key={name}>
-                    <div className="flex justify-between text-sm">
-                      <span>{name}</span>
-                      <span className="text-muted-foreground">
-                        {v.done}/{v.total} ({Math.round((v.done / v.total) * 100)}%)
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${(v.done / v.total) * 100}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={data.statusMix} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                    {data.statusMix.map((entry) => (
+                      <Cell key={entry.key} fill={STATUS_COLOR[entry.key] || 'var(--border)'} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
             )}
-          </Panel>
-        </>
-      )}
+          </div>
+        </Panel>
+      </div>
+
+      {/* Saved Snapshots Section */}
+      <Panel title="Saved Snapshots" description="Archived historical reports saved for future review">
+        {savedList.length === 0 ? (
+          <Empty
+            icon={History}
+            title="No snapshots saved yet"
+            description="Click 'Save Snapshot' above to store permanent weekly or monthly summaries."
+          />
+        ) : (
+          <div className="divide-y">
+            {savedList.map((rep) => (
+              <div key={rep.id} className="flex items-center justify-between py-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm capitalize">{rep.period} Report</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({rep.period_start} to {rep.period_end})
+                    </span>
+                  </div>
+                  {rep.narrative && <p className="text-xs text-muted-foreground mt-0.5">{rep.narrative}</p>}
+                </div>
+                <div className="text-right text-xs text-muted-foreground">
+                  Saved {new Date(rep.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
     </div>
   )
 }

@@ -10,16 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAiRouteImport } from './routes/admin/ai'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminDocumentsRouteImport } from './routes/admin/documents'
+import { Route as AdminMonitoringRouteImport } from './routes/admin/monitoring'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAssistantRouteImport } from './routes/app/assistant'
 import { Route as AppAutomationsRouteImport } from './routes/app/automations'
 import { Route as AppCalendarRouteImport } from './routes/app/calendar'
 import { Route as AppCheckInRouteImport } from './routes/app/check-in'
 import { Route as AppDocumentsRouteImport } from './routes/app/documents'
+import { Route as AppHabitsRouteImport } from './routes/app/habits'
 import { Route as AppInboxRouteImport } from './routes/app/inbox'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
 import { Route as AppProfileRouteImport } from './routes/app/profile'
@@ -35,6 +44,11 @@ import { Route as AppProjectsProjectIdRouteImport } from './routes/app/projects/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -56,6 +70,41 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMonitoringRoute = AdminMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -85,6 +134,11 @@ const AppCheckInRoute = AppCheckInRouteImport.update({
 const AppDocumentsRoute = AppDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHabitsRoute = AppHabitsRouteImport.update({
+  id: '/habits',
+  path: '/habits',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInboxRoute = AppInboxRouteImport.update({
@@ -145,15 +199,23 @@ const AppProjectsProjectIdRoute = AppProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/monitoring': typeof AdminMonitoringRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
   '/app/documents': typeof AppDocumentsRoute
+  '/app/habits': typeof AppHabitsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/profile': typeof AppProfileRoute
@@ -162,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
   '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
@@ -172,11 +235,18 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/monitoring': typeof AdminMonitoringRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
   '/app/documents': typeof AppDocumentsRoute
+  '/app/habits': typeof AppHabitsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/profile': typeof AppProfileRoute
@@ -185,6 +255,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
   '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
@@ -193,15 +264,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/monitoring': typeof AdminMonitoringRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/automations': typeof AppAutomationsRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/check-in': typeof AppCheckInRoute
   '/app/documents': typeof AppDocumentsRoute
+  '/app/habits': typeof AppHabitsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/profile': typeof AppProfileRoute
@@ -210,6 +289,7 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/api/cron/automations': typeof ApiCronAutomationsRoute
   '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
@@ -219,15 +299,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/admin/ai'
+    | '/admin/audit'
+    | '/admin/documents'
+    | '/admin/monitoring'
+    | '/admin/settings'
+    | '/admin/users'
     | '/app/assistant'
     | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
     | '/app/documents'
+    | '/app/habits'
     | '/app/inbox'
     | '/app/notifications'
     | '/app/profile'
@@ -236,6 +324,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
+    | '/admin/'
     | '/app/'
     | '/api/cron/automations'
     | '/app/projects/$projectId'
@@ -246,11 +335,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/admin/ai'
+    | '/admin/audit'
+    | '/admin/documents'
+    | '/admin/monitoring'
+    | '/admin/settings'
+    | '/admin/users'
     | '/app/assistant'
     | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
     | '/app/documents'
+    | '/app/habits'
     | '/app/inbox'
     | '/app/notifications'
     | '/app/profile'
@@ -259,6 +355,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
+    | '/admin'
     | '/app'
     | '/api/cron/automations'
     | '/app/projects/$projectId'
@@ -266,15 +363,23 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/onboarding'
     | '/reset-password'
+    | '/admin/ai'
+    | '/admin/audit'
+    | '/admin/documents'
+    | '/admin/monitoring'
+    | '/admin/settings'
+    | '/admin/users'
     | '/app/assistant'
     | '/app/automations'
     | '/app/calendar'
     | '/app/check-in'
     | '/app/documents'
+    | '/app/habits'
     | '/app/inbox'
     | '/app/notifications'
     | '/app/profile'
@@ -283,6 +388,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/auth/callback'
+    | '/admin/'
     | '/app/'
     | '/api/cron/automations'
     | '/app/projects/$projectId'
@@ -291,6 +397,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
@@ -305,6 +412,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -334,6 +448,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/documents': {
+      id: '/admin/documents'
+      path: '/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/monitoring': {
+      id: '/admin/monitoring'
+      path: '/monitoring'
+      fullPath: '/admin/monitoring'
+      preLoaderRoute: typeof AdminMonitoringRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/app/': {
       id: '/app/'
@@ -375,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/app/documents'
       preLoaderRoute: typeof AppDocumentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/habits': {
+      id: '/app/habits'
+      path: '/habits'
+      fullPath: '/app/habits'
+      preLoaderRoute: typeof AppHabitsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/inbox': {
@@ -457,12 +627,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAiRoute: typeof AdminAiRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminMonitoringRoute: typeof AdminMonitoringRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAiRoute: AdminAiRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminMonitoringRoute: AdminMonitoringRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
   AppAutomationsRoute: typeof AppAutomationsRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppCheckInRoute: typeof AppCheckInRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
+  AppHabitsRoute: typeof AppHabitsRoute
   AppInboxRoute: typeof AppInboxRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -481,6 +674,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCalendarRoute: AppCalendarRoute,
   AppCheckInRoute: AppCheckInRoute,
   AppDocumentsRoute: AppDocumentsRoute,
+  AppHabitsRoute: AppHabitsRoute,
   AppInboxRoute: AppInboxRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppProfileRoute: AppProfileRoute,
@@ -507,6 +701,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   OnboardingRoute: OnboardingRoute,

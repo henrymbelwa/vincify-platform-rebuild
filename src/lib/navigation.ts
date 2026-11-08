@@ -5,6 +5,7 @@ import {
   ChartNoAxesCombined,
   CircleCheckBig,
   FileText,
+  Flame,
   FolderKanban,
   Gift,
   House,
@@ -21,6 +22,7 @@ export type AppPath =
   | '/app/assistant'
   | '/app/check-in'
   | '/app/tasks'
+  | '/app/habits'
   | '/app/inbox'
   | '/app/calendar'
   | '/app/reports'
@@ -46,8 +48,9 @@ export const navGroups: { label: string; items: NavItem[] }[] = [
       { label: 'AI Assistant', icon: Bot, path: '/app/assistant' },
       { label: 'Daily Check-in', icon: SunMedium, path: '/app/check-in' },
       { label: 'My Tasks', icon: CircleCheckBig, path: '/app/tasks' },
+      { label: 'Habits & Streaks', icon: Flame, path: '/app/habits' },
       { label: 'Inbox', icon: Inbox, path: '/app/inbox' },
-      { label: 'Calendar', icon: CalendarDays, path: '/app/calendar' },
+      { label: 'Calendar & Time-blocking', icon: CalendarDays, path: '/app/calendar' },
       { label: 'Reports & Analytics', icon: ChartNoAxesCombined, path: '/app/reports' },
       { label: 'My Projects', icon: FolderKanban, path: '/app/projects' },
       { label: 'My Documents', icon: FileText, path: '/app/documents' },

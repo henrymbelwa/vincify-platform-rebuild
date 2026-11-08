@@ -101,3 +101,101 @@ export interface Message {
   content: string
   created_at: string
 }
+
+export interface Habit {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  frequency: 'daily' | 'weekly'
+  target_days_per_week: number
+  category: string | null
+  color: string | null
+  archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface HabitLog {
+  id: string
+  user_id: string
+  habit_id: string
+  completed_date: string
+  notes: string | null
+  created_at: string
+}
+
+export interface PlannedActivity {
+  id: string
+  user_id: string
+  checkin_id: string | null
+  task_id: string | null
+  project_id: string | null
+  title: string
+  starts_at: string | null
+  ends_at: string | null
+  done: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SavedReport {
+  id: string
+  user_id: string
+  period: 'daily' | 'weekly' | 'monthly'
+  period_start: string
+  period_end: string
+  data: Record<string, any>
+  narrative: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUser {
+  id: string
+  role: 'superadmin' | 'admin' | 'auditor'
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AiConfigurationRecord {
+  id: string
+  active_provider: string
+  fallback_provider: string | null
+  fallback_enabled: boolean
+  model_name: string
+  api_base_url: string | null
+  timeout_ms: number
+  daily_analysis_limit: number
+  settings: Record<string, any>
+  updated_at: string
+}
+
+export interface AiUsageEvent {
+  id: string
+  user_id: string | null
+  feature: string
+  provider: string
+  model: string
+  input_tokens: number | null
+  output_tokens: number | null
+  total_tokens: number | null
+  estimated_cost_usd: number
+  duration_ms: number | null
+  status: 'succeeded' | 'failed'
+  error_message: string | null
+  created_at: string
+}
+
+export interface AdminAuditLog {
+  id: string
+  admin_id: string | null
+  admin_email: string | null
+  action: string
+  target_type: string
+  target_id: string | null
+  details: Record<string, any>
+  ip_address: string | null
+  created_at: string
+}
