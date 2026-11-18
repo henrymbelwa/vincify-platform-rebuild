@@ -27,6 +27,10 @@ Vincify uses Google Gemini directly from the server. Set `GEMINI_API_KEY`; optio
 ## Email
 
 Automations send through plain SMTP (`SMTP_*`), so any mailbox works: Gmail (app password), Outlook, Zoho, cPanel and others.
+For any comments please email me at mbelwahenry@gmail.com
+
+## How to access the program
+Check out the link  https://vincify.vercel.app/
 
 ## Tests
 
